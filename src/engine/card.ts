@@ -28,3 +28,10 @@ export function parseCard(s: string): Card {
 export function parseCards(s: string): Card[] {
   return s.trim().split(/\s+/).map(parseCard)
 }
+
+export const SUIT_SYMBOLS: Record<Suit, string> = { s: '♠', h: '♥', d: '♦', c: '♣' }
+
+/** Short display form such as "K♠". */
+export function cardLabel(c: Card): string {
+  return RANK_CHARS[c.rank - 2] + SUIT_SYMBOLS[c.suit]
+}
