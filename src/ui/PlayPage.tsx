@@ -1,12 +1,14 @@
 import { useState } from 'react'
-import { isGameOver } from '../engine/game'
+import { findPreflopChart } from '../engine/charts'
+import { PERSONALITIES, PROFILES } from '../engine/profiles'
 import { handClass, positions } from '../engine/range'
 import { ActionBar } from './ActionBar'
 import { CoachPanel } from './CoachPanel'
 import { HistoryPanel } from './HistoryPanel'
 import { RangeChart } from './RangeChart'
 import { Table } from './Table'
-import { HERO, useGame } from './useGame'
+import type { Lineup } from './useGame'
+import { HERO, sessionOver, useGame } from './useGame'
 
 type Tab = 'coach' | 'charts' | 'history'
 const TABS: { id: Tab; label: string }[] = [
@@ -16,14 +18,15 @@ const TABS: { id: Tab; label: string }[] = [
 ]
 
 export function PlayPage() {
-  const { game, history, heroAct, nextHand, newGame } = useGame()
+  const { game, profiles, seatStats, history, heroAct, nextHand, rebuy, newGame } = useGame()
   const [tab, setTab] = useState<Tab>('coach')
   const [hints, setHints] = useState(true)
   const [opponents, setOpponents] = useState(game.players.length - 1)
+  const [lineup, setLineup] = useState<Lineup>('mixed')
 
   const hero = game.players[HERO]
   const heroTurn = !game.handOver && game.toAct === HERO
-  const gameOver = isGameOver(game)
+  const gameOver = sessionOver(game)
   const heroPosition = hero.inHand
     ? positions(
         game.players.map((p) => p.inHand),
@@ -31,10 +34,22 @@ export function PlayPage() {
       )[HERO]
     : null
   const heroClass = hero.hole.length === 2 ? handClass(hero.hole[0], hero.hole[1]) : null
+  // Show the chart for the hero's current preflop spot, if one applies.
+  const heroChartId =
+    !game.handOver && game.street === 'preflop' && hero.inHand && !hero.folded
+      ? (findPreflopChart(
+          game.events,
+          HERO,
+          positions(
+            game.players.map((p) => p.inHand),
+            game.button,
+          ),
+        )?.id ?? null)
+      : null
 
   const startNew = () => {
     if (gameOver || confirm('Start a new game? Your current stacks will be reset.')) {
-      newGame(opponents)
+      newGame(opponents, lineup)
     }
   }
 
@@ -55,6 +70,17 @@ export function PlayPage() {
             ))}
           </select>
         </label>
+        <label>
+          <span className="sr-only">Opponent types</span>
+          <select value={lineup} onChange={(e) => setLineup(e.target.value as Lineup)}>
+            <option value="mixed">Mixed opponents</option>
+            {PERSONALITIES.map((p) => (
+              <option key={p} value={p}>
+                All {PROFILES[p].plural}
+              </option>
+            ))}
+          </select>
+        </label>
         <button className="btn" onClick={startNew}>
           New game
         </button>
@@ -62,7 +88,14 @@ export function PlayPage() {
 
       <div className="layout">
         <section className="play">
-          <Table game={game} onNextHand={nextHand} gameOver={gameOver} />
+          <Table
+            game={game}
+            onNextHand={nextHand}
+            onRebuy={rebuy}
+            gameOver={gameOver}
+            profiles={profiles}
+            seatStats={seatStats}
+          />
           {heroTurn ? (
             <ActionBar
               key={`${game.handNumber}-${game.events.length}`}
@@ -72,7 +105,9 @@ export function PlayPage() {
           ) : (
             <div className="action-bar action-wait muted">
               {gameOver
-                ? 'Game over. Start a new game to play again.'
+                ? hero.stack > 0
+                  ? 'You won every chip. Start a new game to play again.'
+                  : 'You are out of chips. Rebuy or start a new game.'
                 : game.handOver
                   ? `Hand #${game.handNumber} is over.`
                   : `${game.players[game.toAct ?? HERO].name} is thinking…`}
@@ -98,8 +133,12 @@ export function PlayPage() {
             ))}
           </div>
           <div className="panel">
-            {tab === 'coach' && <CoachPanel game={game} hints={hints} lastHand={history[0]} />}
-            {tab === 'charts' && <RangeChart position={heroPosition} current={heroClass} />}
+            {tab === 'coach' && (
+              <CoachPanel game={game} hints={hints} lastHand={history[0]} profiles={profiles} />
+            )}
+            {tab === 'charts' && (
+              <RangeChart chartId={heroChartId} position={heroPosition} current={heroClass} />
+            )}
             {tab === 'history' && <HistoryPanel history={history} />}
           </div>
         </aside>

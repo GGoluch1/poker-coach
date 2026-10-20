@@ -2,6 +2,9 @@ import type { CSSProperties } from 'react'
 import type { GameState } from '../engine/game'
 import { blindSeats, totalPot } from '../engine/game'
 import { describeHand, evaluateHand } from '../engine/hand'
+import type { Personality } from '../engine/profiles'
+import { PROFILES } from '../engine/profiles'
+import type { PlayStats } from '../engine/stats'
 import { positions } from '../engine/range'
 import { CardView } from './CardView'
 import { HERO } from './useGame'
@@ -10,11 +13,25 @@ const ACTION_LABEL = { fold: 'Fold', check: 'Check', call: 'Call', bet: 'Bet', r
 
 interface Props {
   game: GameState
-  onNextHand: () => void
-  gameOver: boolean
+  onNextHand?: () => void
+  onRebuy?: () => void
+  gameOver?: boolean
+  profiles?: (Personality | undefined)[]
+  /** Per-seat stats, shown as VPIP/PFR on each opponent. */
+  seatStats?: PlayStats[]
+  /** Replay mode: no result banner or next-hand button. */
+  replay?: boolean
 }
 
-export function Table({ game, onNextHand, gameOver }: Props) {
+export function Table({
+  game,
+  onNextHand,
+  onRebuy,
+  gameOver = false,
+  profiles = [],
+  seatStats,
+  replay = false,
+}: Props) {
   const n = game.players.length
   const pos = positions(
     game.players.map((p) => p.inHand),
@@ -51,13 +68,20 @@ export function Table({ game, onNextHand, gameOver }: Props) {
           <div className="pot">
             Pot <strong>{pot}</strong>
           </div>
-          {game.handOver && (
+          {game.handOver && !replay && (
             <div className="result">
               <ResultLine game={game} />
               {gameOver ? (
-                <span className="result-over">
-                  {game.players[HERO].stack > 0 ? 'You won the table!' : 'You are out of chips.'}
-                </span>
+                <>
+                  <span className="result-over">
+                    {game.players[HERO].stack > 0 ? 'You won the table!' : 'You are out of chips.'}
+                  </span>
+                  {game.players[HERO].stack === 0 && onRebuy && (
+                    <button className="btn btn-primary" onClick={onRebuy} autoFocus>
+                      Rebuy for 100 bb
+                    </button>
+                  )}
+                </>
               ) : (
                 <button className="btn btn-primary" onClick={onNextHand} autoFocus>
                   Deal next hand
@@ -102,6 +126,21 @@ export function Table({ game, onNextHand, gameOver }: Props) {
                   {pos[seat] && <span className="seat-pos">{pos[seat]}</span>}
                 </div>
                 <div className="seat-stack">{p.inHand || p.stack > 0 ? p.stack : 'Out'}</div>
+                {profiles[seat] && (
+                  <div className="seat-profile" title={PROFILES[profiles[seat]].description}>
+                    {PROFILES[profiles[seat]].short}
+                    {seatStats && seatStats[seat].hands > 0 && (
+                      <span
+                        className="hud"
+                        title={`VPIP / PFR over ${seatStats[seat].hands} hands`}
+                      >
+                        {' '}
+                        {Math.round((seatStats[seat].vpip / seatStats[seat].hands) * 100)}/
+                        {Math.round((seatStats[seat].pfr / seatStats[seat].hands) * 100)}
+                      </span>
+                    )}
+                  </div>
+                )}
                 {won ? (
                   <div className="seat-badge badge-win">Wins {won}</div>
                 ) : p.allIn ? (

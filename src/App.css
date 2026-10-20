@@ -1224,3 +1224,120 @@ kbd {
   font-size: 18px;
   font-weight: 700;
 }
+
+/* Preflop charts with calls */
+.cell-call {
+  background: var(--call);
+  color: var(--call-text);
+}
+.chart-select {
+  width: 100%;
+  margin-bottom: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.chart-legend .swatch {
+  display: inline-block;
+  vertical-align: -1px;
+  border: 1px solid var(--border);
+}
+
+/* Opponent types on seats */
+.seat-profile {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--accent);
+}
+.hud {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+}
+
+/* EV rows in reviews */
+.ev-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.ev-chosen {
+  color: var(--text);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Math drills */
+.math-spot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 14px;
+  border-radius: 12px;
+  background: radial-gradient(ellipse at center, #2a8a5e 0%, var(--felt) 70%);
+  color: var(--on-felt);
+}
+.math-spot div {
+  display: flex;
+  flex-direction: column;
+}
+.math-spot strong {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Imported hands */
+.hands-layout {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  margin-top: 12px;
+}
+@media (max-width: 900px) {
+  .hands-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.import-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.import-panel p {
+  margin: 0;
+}
+.import-row {
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+}
+.replay .table-wrap {
+  margin: 0 -8px;
+}
+.replay-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.replay-caption {
+  flex: 1;
+  text-align: center;
+  min-width: 0;
+}
+.replay-heading {
+  font-size: 15px;
+  margin: 16px 0 4px;
+}

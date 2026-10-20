@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import type { DrillAnswer, DrillItem, DrillKind, Grade } from '../engine/drills'
-import { drillKey, gradeDrill } from '../engine/drills'
+import type { DrillAnswer, DrillItem, GeneratedKind, Grade } from '../engine/drills'
+import { drillKey, gradeDrill, preflopChartOf } from '../engine/drills'
 import { dueCards } from '../engine/srs'
 import { randomSeed, runInWorker } from '../worker/client'
 import { DrillQuestion } from './DrillQuestion'
@@ -8,7 +8,7 @@ import { recordDeckAnswer, recordDrill, useProgress } from './progress'
 import { RangeChart } from './RangeChart'
 import { useNow } from './useNow'
 
-export type DrillMode = Exclude<DrillKind, 'hand'> | 'review'
+export type DrillMode = GeneratedKind | 'review'
 
 const DRILLS: { id: DrillMode; title: string; blurb: string }[] = [
   {
@@ -23,13 +23,28 @@ const DRILLS: { id: DrillMode; title: string; blurb: string }[] = [
   },
   {
     id: 'preflop',
-    title: 'Preflop opens',
-    blurb: 'Raise or fold from each position, checked against 6-max opening charts.',
+    title: 'Preflop charts',
+    blurb: 'Open, defend against an open, or face a 3-bet: raise, call or fold by the charts.',
   },
   {
     id: 'texture',
     title: 'Board texture',
     blurb: 'Classify flops by suits, connectedness and how wet they are.',
+  },
+  {
+    id: 'mdf',
+    title: 'Defense and bluff math',
+    blurb: 'Minimum defense frequency, bluff break-even and pot odds for any bet size.',
+  },
+  {
+    id: 'combos',
+    title: 'Combos and blockers',
+    blurb: 'Count how many combos of a hand remain once you see the board and your cards.',
+  },
+  {
+    id: 'setmine',
+    title: 'Set mining',
+    blurb: 'Is calling with a small pair profitable at this stack depth? Implied odds and SPR.',
   },
   {
     id: 'review',
@@ -225,7 +240,7 @@ export function DrillsPage({ initialMode }: { initialMode: DrillMode | null }) {
                 {current.item.kind === 'preflop' && (
                   <RangeChart
                     key={current.key}
-                    position={current.item.position}
+                    chartId={preflopChartOf(current.item).id}
                     current={current.item.handClass}
                   />
                 )}

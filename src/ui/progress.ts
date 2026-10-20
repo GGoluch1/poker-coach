@@ -11,6 +11,8 @@ const STORAGE_KEY = 'poker-coach:progress:v1'
 
 export interface Leak {
   count: number
+  /** Estimated big blinds given up, where the EV of the options could be estimated. */
+  bbLost?: number
   streets: Partial<Record<Street, number>>
   lastSeen: number
 }
@@ -87,6 +89,7 @@ export function recordHand(id: string, result: HandReviewResult, now = Date.now(
       const prev = leaks[d.review.category] ?? { count: 0, streets: {}, lastSeen: 0 }
       leaks[d.review.category] = {
         count: prev.count + 1,
+        bbLost: (prev.bbLost ?? 0) + (d.lostBb ?? 0),
         streets: { ...prev.streets, [d.street]: (prev.streets[d.street] ?? 0) + 1 },
         lastSeen: now,
       }

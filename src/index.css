@@ -27,6 +27,8 @@
   --suit-c: #23803f;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.06);
   --act-fold: #9aa3ad;
+  --call: #4f86c6;
+  --call-text: #ffffff;
   --act-1: #3f9a5c;
   --act-2: #d9822b;
   --act-3: #c2413a;
@@ -64,6 +66,8 @@
     --card-bg: #f4f4f1;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
     --act-fold: #5b6670;
+    --call: #3d6fae;
+    --call-text: #eef4fb;
     --act-1: #3b8f57;
     --act-2: #d08a3c;
     --act-3: #d0574f;
@@ -94,6 +98,8 @@
   --card-bg: #f4f4f1;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
   --act-fold: #5b6670;
+  --call: #3d6fae;
+  --call-text: #eef4fb;
   --act-1: #3b8f57;
   --act-2: #d08a3c;
   --act-3: #d0574f;

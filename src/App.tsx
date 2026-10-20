@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { dueCards } from './engine/srs'
 import { DrillsPage } from './ui/DrillsPage'
 import type { DrillMode } from './ui/DrillsPage'
+import { HandsPage } from './ui/HandsPage'
 import { PlayPage } from './ui/PlayPage'
 import { ProgressPage } from './ui/ProgressPage'
 import { useProgress } from './ui/progress'
@@ -9,10 +10,11 @@ import { SolverPage } from './ui/SolverPage'
 import { useNow } from './ui/useNow'
 import './App.css'
 
-type Page = 'play' | 'drills' | 'solver' | 'progress'
+type Page = 'play' | 'drills' | 'hands' | 'solver' | 'progress'
 const PAGES: { id: Page; label: string }[] = [
   { id: 'play', label: 'Play' },
   { id: 'drills', label: 'Drills' },
+  { id: 'hands', label: 'Hands' },
   { id: 'solver', label: 'Solver' },
   { id: 'progress', label: 'Progress' },
 ]
@@ -75,6 +77,7 @@ export default function App() {
       <main>
         {page === 'play' && <PlayPage />}
         {page === 'drills' && <DrillsPage key={drillMode ?? 'menu'} initialMode={drillMode} />}
+        {page === 'hands' && <HandsPage />}
         {page === 'solver' && <SolverPage />}
         {page === 'progress' && <ProgressPage onNavigate={go} />}
       </main>

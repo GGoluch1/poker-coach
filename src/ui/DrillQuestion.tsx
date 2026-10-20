@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Card } from '../engine/card'
 import { parseCard } from '../engine/card'
+import type { ChartAction } from '../engine/charts'
 import type { DrillAnswer, DrillItem } from '../engine/drills'
+import { preflopChartOf } from '../engine/drills'
 import type { HandClass } from '../engine/range'
 import type { Connectedness, SuitTexture, Wetness } from '../engine/texture'
 import { CardView } from './CardView'
@@ -90,6 +92,12 @@ export function DrillQuestion({ item, answered, timed, onAnswer, onTimeout }: Pr
       )
     case 'hand':
       return <HandQuestion item={item} answered={answered} onAnswer={onAnswer} />
+    case 'mdf':
+      return <MdfQuestion item={item} answered={answered} onAnswer={onAnswer} />
+    case 'combos':
+      return <CombosQuestion item={item} answered={answered} onAnswer={onAnswer} />
+    case 'setmine':
+      return <SetMineQuestion item={item} answered={answered} onAnswer={onAnswer} />
   }
 }
 
@@ -140,13 +148,24 @@ function OutsQuestion({ item, answered, onAnswer }: Q<'outs'>) {
 }
 
 function PreflopQuestion({ item, answered, onAnswer }: Q<'preflop'>) {
-  const answer = (action: 'raise' | 'fold') => !answered && onAnswer({ kind: 'preflop', action })
-  useKeys((k) => (k === 'r' ? answer('raise') : k === 'f' ? answer('fold') : undefined), !answered)
+  const chart = preflopChartOf(item)
+  const canCall = chart.situation !== 'open'
+  const answer = (action: ChartAction) => !answered && onAnswer({ kind: 'preflop', action })
+  useKeys(
+    (k) =>
+      k === 'r'
+        ? answer('raise')
+        : k === 'f'
+          ? answer('fold')
+          : k === 'c' && canCall
+            ? answer('call')
+            : undefined,
+    !answered,
+  )
   return (
     <div className="question">
-      <p className="prompt">
-        Folded to you in the <strong>{item.position}</strong> (6-max, 100 bb). Open or fold?
-      </p>
+      <p className="prompt">{chart.prompt}</p>
+      <p className="muted small">6-max, 100 bb deep. What does the chart do with this hand?</p>
       <div className="drill-cards">
         <div>
           <div className="drill-label">{item.handClass}</div>
@@ -161,8 +180,148 @@ function PreflopQuestion({ item, answered, onAnswer }: Q<'preflop'>) {
         <button className="btn btn-fold" disabled={answered} onClick={() => answer('fold')}>
           Fold <kbd>F</kbd>
         </button>
+        {canCall && (
+          <button className="btn btn-call" disabled={answered} onClick={() => answer('call')}>
+            Call <kbd>C</kbd>
+          </button>
+        )}
         <button className="btn btn-raise" disabled={answered} onClick={() => answer('raise')}>
-          Raise <kbd>R</kbd>
+          {chart.raiseLabel} <kbd>R</kbd>
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/** A number input with a submit button, used by the math drills. */
+function NumberAnswer({
+  label,
+  suffix,
+  answered,
+  onSubmit,
+}: {
+  label: string
+  suffix?: string
+  answered: boolean
+  onSubmit: (value: number) => void
+}) {
+  const [value, setValue] = useState('')
+  return (
+    <form
+      className="answer-row"
+      onSubmit={(e) => {
+        e.preventDefault()
+        const n = Number(value)
+        if (value.trim() !== '' && Number.isFinite(n) && n >= 0) onSubmit(n)
+      }}
+    >
+      <input
+        type="number"
+        className="amount"
+        min={0}
+        step="any"
+        value={value}
+        disabled={answered}
+        onChange={(e) => setValue(e.target.value)}
+        aria-label={label}
+        autoFocus
+      />
+      {suffix && <span className="muted">{suffix}</span>}
+      <button className="btn btn-primary" disabled={answered || value === ''}>
+        Check answer
+      </button>
+    </form>
+  )
+}
+
+const MDF_PROMPTS = {
+  mdf: 'How often must you continue (call or raise) so a bluff with any two cards does not profit?',
+  bluff: 'How often must this bet get a fold to break even as a pure bluff?',
+  potodds: 'Facing this bet, how much equity do you need to call?',
+}
+
+function MdfQuestion({ item, answered, onAnswer }: Q<'mdf'>) {
+  const facing = item.question !== 'bluff'
+  return (
+    <div className="question">
+      <div className="math-spot">
+        <div>
+          <span className="drill-label">Pot</span>
+          <strong>{item.pot}</strong>
+        </div>
+        <div>
+          <span className="drill-label">{facing ? 'Villain bets' : 'You bet'}</span>
+          <strong>{item.bet}</strong>
+        </div>
+        <div>
+          <span className="drill-label">Size</span>
+          <strong>{Math.round((item.bet / item.pot) * 100)}% pot</strong>
+        </div>
+      </div>
+      <p className="prompt">{MDF_PROMPTS[item.question]}</p>
+      <NumberAnswer
+        label="Percent"
+        suffix="%"
+        answered={answered}
+        onSubmit={(percent) => onAnswer({ kind: 'mdf', percent })}
+      />
+    </div>
+  )
+}
+
+function CombosQuestion({ item, answered, onAnswer }: Q<'combos'>) {
+  const [a, b, suit] = item.target
+  const name =
+    a === b
+      ? `${a}${a} (a pocket pair)`
+      : suit === 's'
+        ? `${a}${b} suited`
+        : suit === 'o'
+          ? `${a}${b} offsuit`
+          : `${a}${b} (suited and offsuit)`
+  return (
+    <div className="question">
+      <Cards hole={item.hole} board={item.board} />
+      <p className="prompt">How many combos of {name} can your opponent have?</p>
+      <p className="muted small">Count only combos that don't use any card you can see.</p>
+      <NumberAnswer
+        label="Combos"
+        answered={answered}
+        onSubmit={(count) => onAnswer({ kind: 'combos', count: Math.round(count) })}
+      />
+    </div>
+  )
+}
+
+function SetMineQuestion({ item, answered, onAnswer }: Q<'setmine'>) {
+  const answer = (action: 'call' | 'fold') => !answered && onAnswer({ kind: 'setmine', action })
+  useKeys((k) => (k === 'c' ? answer('call') : k === 'f' ? answer('fold') : undefined), !answered)
+  return (
+    <div className="question">
+      <p className="prompt">
+        A player opens to {item.raiseTo} bb and it folds to you on the button with {item.pair}.
+        Effective stacks are {item.stack} bb.
+      </p>
+      <p className="muted small">
+        Assume you fold whenever you miss the flop, and win {Math.round(item.winShare * 100)}% of
+        the remaining stack (on top of the pot) when you flop a set. The blinds fold.
+      </p>
+      <div className="drill-cards">
+        <div>
+          <div className="drill-label">{item.pair}</div>
+          <div className="card-row">
+            {classCards(item.pair).map((c, i) => (
+              <CardView key={i} card={c} size="lg" />
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="choice-row">
+        <button className="btn btn-fold" disabled={answered} onClick={() => answer('fold')}>
+          Fold <kbd>F</kbd>
+        </button>
+        <button className="btn btn-call" disabled={answered} onClick={() => answer('call')}>
+          Call {item.raiseTo} bb <kbd>C</kbd>
         </button>
       </div>
     </div>

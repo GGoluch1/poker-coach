@@ -5,6 +5,7 @@ import { useAsync } from './useAsync'
 import type { HandRecord } from './useGame'
 import { HERO, reviewRecord } from './useGame'
 
+const formatBb = (x: number) => `${x >= 0 ? '+' : ''}${x.toFixed(1)} bb`
 const VERDICT_LABEL = { good: 'Good', ok: 'OK', mistake: 'Mistake', blunder: 'Blunder' }
 const STREET_LABEL = { preflop: 'Preflop', flop: 'Flop', turn: 'Turn', river: 'River' }
 
@@ -50,27 +51,41 @@ export function HandReview({ record, showLog }: { record: HandRecord; showLog?: 
         <p className="muted small">You weren't dealt in or had no decisions this hand.</p>
       ) : (
         <ol className="decisions">
-          {reviews.map(({ street, toCall, currentBet, action, review }, i) => (
-            <li key={i} className={`decision verdict-${review.verdict}`}>
-              <div className="decision-head">
-                <span className="verdict">{VERDICT_LABEL[review.verdict]}</span>
-                <span>
-                  {STREET_LABEL[street]}: {actionText(action, toCall, currentBet)}
-                </span>
-                <span
-                  className="tag tag-right"
-                  title={
-                    review.basis === 'chart'
-                      ? 'Graded against the preflop opening charts'
-                      : 'Graded by equity against guessed ranges, not a solver'
-                  }
-                >
-                  {review.basis === 'chart' ? 'Chart' : 'Heuristic'}
-                </span>
-              </div>
-              <div className="small">{review.message}</div>
-            </li>
-          ))}
+          {reviews.map(
+            ({ street, toCall, currentBet, action, review, options, chosen, lostBb }, i) => (
+              <li key={i} className={`decision verdict-${review.verdict}`}>
+                <div className="decision-head">
+                  <span className="verdict">{VERDICT_LABEL[review.verdict]}</span>
+                  <span>
+                    {STREET_LABEL[street]}: {actionText(action, toCall, currentBet)}
+                  </span>
+                  <span
+                    className="tag tag-right"
+                    title={
+                      review.basis === 'chart'
+                        ? 'Graded against the preflop charts'
+                        : 'Graded by equity against guessed ranges, not a solver'
+                    }
+                  >
+                    {review.basis === 'chart' ? 'Chart' : 'Heuristic'}
+                  </span>
+                </div>
+                <div className="small">{review.message}</div>
+                {options.filter((o) => o.ev !== null).length >= 2 && (
+                  <div className="ev-row small" aria-label="Estimated EV of each option">
+                    {options.map((o, j) => (
+                      <span key={j} className={j === chosen ? 'ev-chosen' : ''} title={o.note}>
+                        {o.label}: {o.ev === null ? '—' : formatBb(o.ev)}
+                      </span>
+                    ))}
+                    {lostBb !== null && lostBb >= 0.1 && (
+                      <span className="neg">−{lostBb.toFixed(1)} bb vs best</span>
+                    )}
+                  </div>
+                )}
+              </li>
+            ),
+          )}
         </ol>
       )}
 

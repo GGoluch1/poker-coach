@@ -10,9 +10,12 @@ type Navigate = (page: 'drills', mode: DrillMode) => void
 const DRILL_NAMES: Record<DrillKind, string> = {
   outs: 'Outs',
   callfold: 'Call or fold',
-  preflop: 'Preflop opens',
+  preflop: 'Preflop charts',
   texture: 'Board texture',
   hand: 'Your hands',
+  mdf: 'Defense and bluff math',
+  combos: 'Combos and blockers',
+  setmine: 'Set mining',
 }
 
 /** What to practice for each leak, and why it matters. */
@@ -38,6 +41,27 @@ const LEAK_ADVICE: Record<string, { tip: string; drill?: DrillMode }> = {
     drill: 'callfold',
   },
   'Folded when check was free': { tip: 'Never fold when you can check for free.' },
+  'Overfolded vs an open': {
+    tip: 'You fold too many hands the charts defend against a raise.',
+    drill: 'preflop',
+  },
+  'Defended too wide': {
+    tip: 'Calling raises with weak hands bleeds chips, especially out of position.',
+    drill: 'preflop',
+  },
+  'Overfolded vs a 3-bet': {
+    tip: 'Folding too much to 3-bets lets opponents re-raise you with anything.',
+    drill: 'preflop',
+  },
+  'Called a 3-bet too wide': {
+    tip: 'Calling 3-bets with marginal hands puts you in big pots with a weak range.',
+    drill: 'preflop',
+  },
+  'Light 3-bet': {
+    tip: 'Re-raising outside the chart works only as a rare bluff.',
+    drill: 'preflop',
+  },
+  'Light 4-bet': { tip: 'Four-bet bluffs are expensive; keep them rare.', drill: 'preflop' },
   'Missed river value': {
     tip: 'With a strong hand on the river, bet so worse hands can pay you off.',
   },
@@ -143,7 +167,12 @@ export function ProgressPage({ onNavigate }: { onNavigate: Navigate }) {
                   <li key={category}>
                     <div className="stat-row">
                       <strong>{category}</strong>
-                      <span>{leak.count}×</span>
+                      <span>
+                        {leak.count}×
+                        {leak.bbLost !== undefined && leak.bbLost >= 0.1 && (
+                          <span className="neg"> · −{leak.bbLost.toFixed(1)} bb</span>
+                        )}
+                      </span>
                     </div>
                     <div className="muted small">{streets}</div>
                     {advice && <div className="small">{advice.tip}</div>}

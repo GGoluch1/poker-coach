@@ -5,6 +5,8 @@ import type { EquityResult } from '../engine/equity'
 import { hitChance } from '../engine/equity'
 import type { GameState } from '../engine/game'
 import { describeHand } from '../engine/hand'
+import type { Personality } from '../engine/profiles'
+import { PROFILES } from '../engine/profiles'
 import { randomSeed, runInWorker } from '../worker/client'
 import { CardText } from './CardView'
 import { HandReview } from './HandReview'
@@ -13,26 +15,34 @@ import type { HandRecord } from './useGame'
 import { HERO } from './useGame'
 
 const pct = (x: number) => `${Math.round(x * 100)}%`
+const formatBb = (x: number) => `${x >= 0 ? '+' : ''}${x.toFixed(1)} bb`
 
 interface Props {
   game: GameState
   hints: boolean
   lastHand: HandRecord | undefined
+  profiles: (Personality | undefined)[]
 }
 
-export function CoachPanel({ game, hints, lastHand }: Props) {
+export function CoachPanel({ game, hints, lastHand, profiles }: Props) {
   const hero = game.players[HERO]
   const inHand = !game.handOver && hero.inHand && !hero.folded
   const active = inHand && hints
   // Pot odds, outs and chart advice are instant; equity comes from the worker.
   const spot = useMemo(
-    () => (active ? analyzeSpot(game, HERO, { iterations: 0 }) : null),
-    [game, active],
+    () => (active ? analyzeSpot(game, HERO, { iterations: 0, profiles }) : null),
+    [game, active, profiles],
   )
   const equity = useAsync(
     active
       ? () =>
-          runInWorker('analyze', { state: game, seat: HERO, iterations: 4000, seed: randomSeed() })
+          runInWorker('analyze', {
+            state: game,
+            seat: HERO,
+            iterations: 4000,
+            seed: randomSeed(),
+            profiles,
+          })
       : null,
     active ? game : null,
   )?.equity
@@ -58,6 +68,8 @@ export function CoachPanel({ game, hints, lastHand }: Props) {
   return (
     <LiveCoach
       spot={spot}
+      profiles={profiles}
+      bigBlind={game.bigBlind}
       equity={equity ?? null}
       heroTurn={game.toAct === HERO}
       waitingOn={game.toAct === null ? null : game.players[game.toAct].name}
@@ -67,11 +79,15 @@ export function CoachPanel({ game, hints, lastHand }: Props) {
 
 function LiveCoach({
   spot,
+  profiles,
+  bigBlind,
   equity: result,
   heroTurn,
   waitingOn,
 }: {
   spot: Spot
+  profiles: (Personality | undefined)[]
+  bigBlind: number
   equity: EquityResult | null
   heroTurn: boolean
   waitingOn: string | null
@@ -93,10 +109,18 @@ function LiveCoach({
 
       {!heroTurn && waitingOn && <p className="muted small">Waiting on {waitingOn}…</p>}
 
-      {spot.openAdvice && (
-        <div className={`advice advice-${spot.openAdvice === 'raise' ? 'good' : 'bad'}`}>
-          Chart: <strong>{spot.openAdvice === 'raise' ? 'Raise' : 'Fold'}</strong>. {spot.handClass}{' '}
-          is {spot.openAdvice === 'raise' ? 'in' : 'outside'} the {spot.position} opening range.
+      {spot.chart && (
+        <div className={`advice advice-${spot.chart.action === 'fold' ? 'bad' : 'good'}`}>
+          <span className="tag">Chart</span>
+          {spot.chart.chart.title}:{' '}
+          <strong>
+            {spot.chart.action === 'raise'
+              ? spot.chart.chart.raiseLabel
+              : spot.chart.action === 'call'
+                ? 'Call'
+                : 'Fold'}
+          </strong>{' '}
+          {spot.handClass}.
         </div>
       )}
 
@@ -120,8 +144,14 @@ function LiveCoach({
           </div>
           <div className="muted small">
             Call {spot.toCall} to win {spot.pot}
+            {equity !== null && (
+              <>
+                {' '}
+                · call EV {formatBb((equity * (spot.pot + spot.toCall) - spot.toCall) / bigBlind)}
+              </>
+            )}
           </div>
-          {heroTurn && !spot.openAdvice && equity !== null && (
+          {heroTurn && !spot.chart && equity !== null && (
             <div className={`advice advice-${equity >= need ? 'good' : 'bad'}`}>
               <span
                 className="tag"
@@ -169,6 +199,9 @@ function LiveCoach({
             {spot.opponents.map((o) => (
               <li key={o.seat}>
                 <strong>{o.name}</strong> {o.read.label}
+                {profiles[o.seat] && (
+                  <div className="muted small">{PROFILES[profiles[o.seat]!].tip}</div>
+                )}
               </li>
             ))}
           </ul>
