@@ -83,6 +83,49 @@ export function evaluateHand(cards: Card[]): HandValue {
   return makeValue(0, ranksDesc.slice(0, 5))
 }
 
+const RANK_NAMES: Record<number, [string, string]> = {
+  2: ['Two', 'Twos'],
+  3: ['Three', 'Threes'],
+  4: ['Four', 'Fours'],
+  5: ['Five', 'Fives'],
+  6: ['Six', 'Sixes'],
+  7: ['Seven', 'Sevens'],
+  8: ['Eight', 'Eights'],
+  9: ['Nine', 'Nines'],
+  10: ['Ten', 'Tens'],
+  11: ['Jack', 'Jacks'],
+  12: ['Queen', 'Queens'],
+  13: ['King', 'Kings'],
+  14: ['Ace', 'Aces'],
+}
+const one = (r: Rank) => RANK_NAMES[r][0]
+const many = (r: Rank) => RANK_NAMES[r][1]
+
+/** Plain-English name such as "Two Pair, Kings and Sevens". */
+export function describeHand(v: HandValue): string {
+  const [a, b] = v.tiebreak
+  switch (v.category) {
+    case 'Straight Flush':
+      return a === 14 ? 'Royal Flush' : `Straight Flush, ${one(a)} high`
+    case 'Four of a Kind':
+      return `Four ${many(a)}`
+    case 'Full House':
+      return `Full House, ${many(a)} full of ${many(b)}`
+    case 'Flush':
+      return `Flush, ${one(a)} high`
+    case 'Straight':
+      return `Straight, ${one(a)} high`
+    case 'Three of a Kind':
+      return `Three ${many(a)}`
+    case 'Two Pair':
+      return `Two Pair, ${many(a)} and ${many(b)}`
+    case 'Pair':
+      return `Pair of ${many(a)}`
+    case 'High Card':
+      return `${one(a)} high`
+  }
+}
+
 /** Positive if `a` wins, negative if `b` wins, 0 for a split. */
 export function compareHands(a: HandValue, b: HandValue): number {
   return a.score - b.score

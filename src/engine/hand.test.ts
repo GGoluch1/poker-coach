@@ -90,10 +90,11 @@ describe('compareHands', () => {
 
   it('matches brute-force best-of-21 on random seven-card hands', () => {
     const combos = (n: number, k: number): number[][] =>
-      k === 0 ? [[]] : n < k ? [] : [
-        ...combos(n - 1, k - 1).map((c) => [...c, n - 1]),
-        ...combos(n - 1, k),
-      ]
+      k === 0
+        ? [[]]
+        : n < k
+          ? []
+          : [...combos(n - 1, k - 1).map((c) => [...c, n - 1]), ...combos(n - 1, k)]
     const fives = combos(7, 5)
     for (let i = 0; i < 2000; i++) {
       const seven = shuffle(createDeck()).slice(0, 7)
