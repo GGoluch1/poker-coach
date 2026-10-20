@@ -1,12 +1,9 @@
-import { useMemo } from 'react'
-import { analyzeSpot } from '../engine/analysis'
 import type { Action } from '../engine/game'
 import { describeEvents, netResult } from '../engine/history'
-import { reviewDecision } from '../engine/review'
-import { seededRng } from '../engine/rng'
 import { CardText } from './CardView'
+import { useAsync } from './useAsync'
 import type { HandRecord } from './useGame'
-import { HERO } from './useGame'
+import { HERO, reviewRecord } from './useGame'
 
 const VERDICT_LABEL = { good: 'Good', ok: 'OK', mistake: 'Mistake', blunder: 'Blunder' }
 const STREET_LABEL = { preflop: 'Preflop', flop: 'Flop', turn: 'Turn', river: 'River' }
@@ -24,22 +21,8 @@ function actionText(action: Action, toCall: number, currentBet: number): string 
   }
 }
 
-function useReviews(record: HandRecord) {
-  return useMemo(
-    () =>
-      record.decisions.map((d, i) => {
-        const spot = analyzeSpot(d.state, HERO, {
-          iterations: 2000,
-          rng: seededRng(d.state.handNumber * 101 + i),
-        })
-        return { spot, decision: d, review: reviewDecision(spot, d.action) }
-      }),
-    [record],
-  )
-}
-
 export function HandReview({ record, showLog }: { record: HandRecord; showLog?: boolean }) {
-  const reviews = useReviews(record)
+  const reviews = useAsync(() => reviewRecord(record), record.id)?.decisions
   const { final } = record
   const net = netResult(final, HERO)
 
@@ -61,17 +44,28 @@ export function HandReview({ record, showLog }: { record: HandRecord; showLog?: 
         </span>
       </div>
 
-      {reviews.length === 0 ? (
+      {!reviews ? (
+        <p className="muted small">Reviewing…</p>
+      ) : reviews.length === 0 ? (
         <p className="muted small">You weren't dealt in or had no decisions this hand.</p>
       ) : (
         <ol className="decisions">
-          {reviews.map(({ spot, decision, review }, i) => (
+          {reviews.map(({ street, toCall, currentBet, action, review }, i) => (
             <li key={i} className={`decision verdict-${review.verdict}`}>
               <div className="decision-head">
                 <span className="verdict">{VERDICT_LABEL[review.verdict]}</span>
                 <span>
-                  {STREET_LABEL[spot.street]}:{' '}
-                  {actionText(decision.action, spot.toCall, decision.state.currentBet)}
+                  {STREET_LABEL[street]}: {actionText(action, toCall, currentBet)}
+                </span>
+                <span
+                  className="tag tag-right"
+                  title={
+                    review.basis === 'chart'
+                      ? 'Graded against the preflop opening charts'
+                      : 'Graded by equity against guessed ranges, not a solver'
+                  }
+                >
+                  {review.basis === 'chart' ? 'Chart' : 'Heuristic'}
                 </span>
               </div>
               <div className="small">{review.message}</div>

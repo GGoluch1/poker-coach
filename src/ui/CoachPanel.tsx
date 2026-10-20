@@ -1,11 +1,14 @@
 import { useMemo } from 'react'
 import type { Spot } from '../engine/analysis'
 import { analyzeSpot } from '../engine/analysis'
+import type { EquityResult } from '../engine/equity'
 import { hitChance } from '../engine/equity'
 import type { GameState } from '../engine/game'
 import { describeHand } from '../engine/hand'
+import { randomSeed, runInWorker } from '../worker/client'
 import { CardText } from './CardView'
 import { HandReview } from './HandReview'
+import { useAsync } from './useAsync'
 import type { HandRecord } from './useGame'
 import { HERO } from './useGame'
 
@@ -20,10 +23,19 @@ interface Props {
 export function CoachPanel({ game, hints, lastHand }: Props) {
   const hero = game.players[HERO]
   const inHand = !game.handOver && hero.inHand && !hero.folded
+  const active = inHand && hints
+  // Pot odds, outs and chart advice are instant; equity comes from the worker.
   const spot = useMemo(
-    () => (inHand && hints ? analyzeSpot(game, HERO, { iterations: 1500 }) : null),
-    [game, inHand, hints],
+    () => (active ? analyzeSpot(game, HERO, { iterations: 0 }) : null),
+    [game, active],
   )
+  const equity = useAsync(
+    active
+      ? () =>
+          runInWorker('analyze', { state: game, seat: HERO, iterations: 4000, seed: randomSeed() })
+      : null,
+    active ? game : null,
+  )?.equity
 
   if (game.handOver) {
     return lastHand ? (
@@ -46,6 +58,7 @@ export function CoachPanel({ game, hints, lastHand }: Props) {
   return (
     <LiveCoach
       spot={spot}
+      equity={equity ?? null}
       heroTurn={game.toAct === HERO}
       waitingOn={game.toAct === null ? null : game.players[game.toAct].name}
     />
@@ -54,14 +67,16 @@ export function CoachPanel({ game, hints, lastHand }: Props) {
 
 function LiveCoach({
   spot,
+  equity: result,
   heroTurn,
   waitingOn,
 }: {
   spot: Spot
+  equity: EquityResult | null
   heroTurn: boolean
   waitingOn: string | null
 }) {
-  const equity = spot.equity!.equity
+  const equity = result?.equity ?? null
   const need = spot.requiredEquity
   const outs = spot.outs.reduce((n, g) => n + g.cards.length, 0)
   const unseen = 52 - 2 - spot.board.length
@@ -88,10 +103,10 @@ function LiveCoach({
       <div className="stat">
         <div className="stat-row">
           <span>Equity</span>
-          <strong>{pct(equity)}</strong>
+          <strong>{equity === null ? '…' : pct(equity)}</strong>
         </div>
         <div className="meter" aria-hidden>
-          <div className="meter-fill" style={{ width: pct(equity) }} />
+          <div className="meter-fill" style={{ width: pct(equity ?? 0) }} />
           {need > 0 && <div className="meter-mark" style={{ left: pct(need) }} />}
         </div>
         <div className="muted small">{spot.equityNote}</div>
@@ -106,8 +121,14 @@ function LiveCoach({
           <div className="muted small">
             Call {spot.toCall} to win {spot.pot}
           </div>
-          {heroTurn && !spot.openAdvice && (
+          {heroTurn && !spot.openAdvice && equity !== null && (
             <div className={`advice advice-${equity >= need ? 'good' : 'bad'}`}>
+              <span
+                className="tag"
+                title="Equity against ranges guessed from preflop action, not a solver result"
+              >
+                Heuristic
+              </span>
               {equity >= need
                 ? `Calling is profitable: ${pct(equity)} equity beats the ${pct(need)} you need.`
                 : `Calling loses money: ${pct(equity)} equity is below the ${pct(need)} you need${outs >= 8 ? ', unless you win a lot more when you hit' : ''}.`}

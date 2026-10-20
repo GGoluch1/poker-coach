@@ -26,6 +26,11 @@
   --suit-d: #1d5fbf;
   --suit-c: #23803f;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.06);
+  --act-fold: #9aa3ad;
+  --act-1: #3f9a5c;
+  --act-2: #d9822b;
+  --act-3: #c2413a;
+  --act-4: #8e2a6b;
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
@@ -58,6 +63,11 @@
     --rail: #33200f;
     --card-bg: #f4f4f1;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
+    --act-fold: #5b6670;
+    --act-1: #3b8f57;
+    --act-2: #d08a3c;
+    --act-3: #d0574f;
+    --act-4: #b04a8f;
     color-scheme: dark;
   }
 }
@@ -83,6 +93,11 @@
   --rail: #33200f;
   --card-bg: #f4f4f1;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
+  --act-fold: #5b6670;
+  --act-1: #3b8f57;
+  --act-2: #d08a3c;
+  --act-3: #d0574f;
+  --act-4: #b04a8f;
   color-scheme: dark;
 }
 
@@ -107,7 +122,8 @@ h3 {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
   color: inherit;
 }

@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import { chooseBotAction } from '../engine/bot'
 import type { Action, GameState } from '../engine/game'
 import { applyAction, createGame, isGameOver, startHand } from '../engine/game'
+import { randomSeed, reviewHand, runInWorker } from '../worker/client'
+import { recordHand } from './progress'
 
 export const HERO = 0
 const BOT_NAMES = ['Ava', 'Ben', 'Cleo', 'Dev', 'Eli']
-const STORAGE_KEY = 'poker-coach:session:v1'
+const STORAGE_KEY = 'poker-coach:session:v2'
 const HISTORY_LIMIT = 30
 
 export interface Decision {
@@ -15,11 +16,14 @@ export interface Decision {
 }
 
 export interface HandRecord {
+  /** Unique across games, e.g. "k3x9-12". */
+  id: string
   final: GameState
   decisions: Decision[]
 }
 
 interface Session {
+  gameId: string
   game: GameState
   /** Hero decisions in the hand being played. */
   decisions: Decision[]
@@ -34,14 +38,15 @@ function freshSession(opponents: number): Session {
     smallBlind: 1,
     bigBlind: 2,
   })
-  return deal({ game, decisions: [], history: [] })
+  const gameId = Math.random().toString(36).slice(2, 8)
+  return deal({ gameId, game, decisions: [], history: [] })
 }
 
 /** Records the hand if it just ended. */
 function settle(s: Session): Session {
   if (!s.game.handOver) return s
-  const record = { final: s.game, decisions: s.decisions }
-  return { game: s.game, decisions: [], history: [record, ...s.history].slice(0, HISTORY_LIMIT) }
+  const record = { id: `${s.gameId}-${s.game.handNumber}`, final: s.game, decisions: s.decisions }
+  return { ...s, decisions: [], history: [record, ...s.history].slice(0, HISTORY_LIMIT) }
 }
 
 function deal(s: Session): Session {
@@ -61,15 +66,25 @@ function load(): Session | null {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
     const s = JSON.parse(raw) as Session
-    return s.game?.players?.length >= 2 && Array.isArray(s.history) ? s : null
+    return s.gameId && s.game?.players?.length >= 2 && Array.isArray(s.history) ? s : null
   } catch {
     return null
   }
 }
 
+export function reviewRecord(record: HandRecord) {
+  return reviewHand({
+    id: record.id,
+    final: record.final,
+    decisions: record.decisions,
+    seat: HERO,
+  })
+}
+
 export function useGame() {
   const [session, setSession] = useState<Session>(() => load() ?? freshSession(5))
   const { game } = session
+  const latest = session.history[0]
 
   useEffect(() => {
     try {
@@ -79,16 +94,30 @@ export function useGame() {
     }
   }, [session])
 
-  // Bots act on their own after a short pause so the hero can follow along.
+  // Bots decide in the worker after a short pause so the hero can follow along.
   useEffect(() => {
     if (game.handOver || game.toAct === null || game.toAct === HERO) return
     const heroWatching = game.players[HERO].inHand && !game.players[HERO].folded
+    let live = true
     const timer = setTimeout(
-      () => setSession((s) => act(s, chooseBotAction(s.game))),
-      heroWatching ? 700 : 300,
+      () => {
+        runInWorker('bot', { state: game, seed: randomSeed() }).then((action) => {
+          if (live) setSession((s) => (s.game === game ? act(s, action) : s))
+        })
+      },
+      heroWatching ? 700 : 250,
     )
-    return () => clearTimeout(timer)
+    return () => {
+      live = false
+      clearTimeout(timer)
+    }
   }, [game])
+
+  // Review each finished hand once for stats, leaks and spaced repetition.
+  useEffect(() => {
+    if (!latest) return
+    reviewRecord(latest).then((result) => recordHand(latest.id, result))
+  }, [latest])
 
   return {
     game,
