@@ -1,32 +1,41 @@
-# React + TypeScript + Vite
+# Poker Coach
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Play no-limit hold'em against bots in the browser, with a coach that explains the math as you play
+and reviews every decision after the hand.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Table**: 2 to 6 players, 1/2 blinds, 100 big blind stacks, side pots, and bots that act on
+  their own.
+- **Live coach**: equity against opponents' likely ranges, pot odds, outs with hit chances, and
+  preflop chart advice. It can be turned off if you want to play without hints.
+- **Preflop charts**: 6-max opening ranges for every position, with your current hand highlighted.
+- **Hand history and review**: the last 30 hands with a full log. Each of your decisions is graded
+  from Good to Blunder, with the reason.
 
-## React Compiler
+The game saves to your browser, so a reload picks up where you left off.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Development
 
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```
+npm install
+npm run dev      # local dev server
+npm test         # unit tests (Vitest)
+npm run build    # type-check and production build
+npm run lint
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Layout
+
+- `src/engine/`: the poker engine in plain TypeScript, with no UI imports.
+  - `card`, `deck`, `hand`: cards, shuffling, and the 5 to 7 card hand evaluator
+  - `pot`, `game`: side pots and the betting state machine (blinds, min-raises, all-ins, showdown)
+  - `range`, `equity`: preflop ranges and charts, Monte Carlo equity, outs
+  - `analysis`, `bot`, `review`, `history`: spot analysis, bot strategy, decision grading, and
+    hand history text
+- `src/ui/`: React components and the `useGame` hook that runs the table.
+
+## Deploying
+
+Vercel builds the site from the `master` branch on every push (`npm run build`, output folder
+`dist`).
