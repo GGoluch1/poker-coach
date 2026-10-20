@@ -1,13 +1,12 @@
 import type { Card } from './card'
-import { SUITS } from './card'
 import { createDeck } from './deck'
+import type { CardId } from './fastEval'
+import { scoreIds, toId } from './fastEval'
 import type { HandCategory } from './hand'
 import { HAND_CATEGORIES, evaluateHand } from './hand'
 import type { Range } from './range'
 import { combos } from './range'
 import type { Rng } from './rng'
-
-const cardId = (c: Card) => c.rank * 4 + SUITS.indexOf(c.suit)
 
 export interface EquityResult {
   /** Share of runouts hero wins outright. */
@@ -37,55 +36,80 @@ export function estimateEquity({
 }: EquityOptions): EquityResult {
   if (opponents.length === 0) return { win: 1, tie: 0, equity: 1 }
 
-  const dead = new Set([...hero, ...board].map(cardId))
-  const deck = createDeck().filter((c) => !dead.has(cardId(c)))
-  // Combos of each range that don't clash with known cards; null means random.
+  const known = [...hero, ...board].map(toId)
+  const dead = new Uint8Array(52)
+  for (const id of known) dead[id] = 1
+  const deck: CardId[] = []
+  for (let id = 0; id < 52; id++) if (!dead[id]) deck.push(id)
+  // Combos of each range that don't clash with known cards, as flat id pairs; null means random.
   const candidates = opponents.map((range) => {
     if (!range) return null
-    const list = [...range]
-      .flatMap(combos)
-      .filter(([a, b]) => !dead.has(cardId(a)) && !dead.has(cardId(b)))
-    return list.length > 0 ? list : null
+    const flat: CardId[] = []
+    for (const cls of range) {
+      for (const [a, b] of combos(cls)) {
+        const ia = toId(a)
+        const ib = toId(b)
+        if (!dead[ia] && !dead[ib]) flat.push(ia, ib)
+      }
+    }
+    return flat.length > 0 ? flat : null
   })
 
-  let wins = 0
-  let ties = 0
-  let equity = 0
-  const used = new Set<number>()
-  const draw = (): Card => {
+  // Scratch buffers: [hole1, hole2, board x5] for hero and each opponent.
+  const heroHand = new Int32Array(7)
+  heroHand[0] = known[0]
+  heroHand[1] = known[1]
+  const oppHands = opponents.map(() => new Int32Array(7))
+  const used = new Uint8Array(52)
+  const draw = (): CardId => {
     for (;;) {
-      const c = deck[Math.floor(rng() * deck.length)]
-      const id = cardId(c)
-      if (!used.has(id)) {
-        used.add(id)
-        return c
+      const id = deck[Math.floor(rng() * deck.length)]
+      if (!used[id]) {
+        used[id] = 1
+        return id
       }
     }
   }
 
+  let wins = 0
+  let ties = 0
+  let equity = 0
   for (let it = 0; it < iterations; it++) {
-    used.clear()
-    const hands: Card[][] = candidates.map((list) => {
-      if (list) {
-        for (let tries = 0; tries < 30; tries++) {
-          const [a, b] = list[Math.floor(rng() * list.length)]
-          if (!used.has(cardId(a)) && !used.has(cardId(b))) {
-            used.add(cardId(a))
-            used.add(cardId(b))
-            return [a, b]
+    used.fill(0)
+    for (let o = 0; o < oppHands.length; o++) {
+      const hand = oppHands[o]
+      const flat = candidates[o]
+      let placed = false
+      if (flat) {
+        const pairs = flat.length / 2
+        for (let tries = 0; tries < 30 && !placed; tries++) {
+          const k = Math.floor(rng() * pairs) * 2
+          const a = flat[k]
+          const b = flat[k + 1]
+          if (!used[a] && !used[b]) {
+            used[a] = used[b] = 1
+            hand[0] = a
+            hand[1] = b
+            placed = true
           }
         }
       }
-      return [draw(), draw()]
-    })
-    const runout = [...board]
-    while (runout.length < 5) runout.push(draw())
+      if (!placed) {
+        hand[0] = draw()
+        hand[1] = draw()
+      }
+    }
+    for (let i = 0; i < 5; i++) {
+      const card = i < board.length ? known[2 + i] : draw()
+      heroHand[2 + i] = card
+      for (const hand of oppHands) hand[2 + i] = card
+    }
 
-    const heroScore = evaluateHand([...hero, ...runout]).score
+    const heroScore = scoreIds(heroHand)
     let best = 0
     let tied = 0
-    for (const h of hands) {
-      const score = evaluateHand([...h, ...runout]).score
+    for (const hand of oppHands) {
+      const score = scoreIds(hand)
       if (score > best) {
         best = score
         tied = 0
@@ -125,12 +149,12 @@ function pairedCategory(cards: Card[]): number {
  */
 export function findOuts(hole: Card[], board: Card[]): OutGroup[] {
   if (board.length < 3 || board.length > 4) return []
-  const known = new Set([...hole, ...board].map(cardId))
+  const known = new Set([...hole, ...board].map(toId))
   const current = HAND_CATEGORIES.indexOf(evaluateHand([...hole, ...board]).category)
   const groups = new Map<HandCategory, Card[]>()
 
   for (const c of createDeck()) {
-    if (known.has(cardId(c))) continue
+    if (known.has(toId(c))) continue
     const next = evaluateHand([...hole, ...board, c])
     const nextIndex = HAND_CATEGORIES.indexOf(next.category)
     if (nextIndex <= current) continue
