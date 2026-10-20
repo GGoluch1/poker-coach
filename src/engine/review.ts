@@ -35,8 +35,8 @@ export function reviewDecision(spot: Spot, action: Action): DecisionReview {
     basis: 'heuristic',
   })
 
-  if (spot.openAdvice) {
-    const inRange = spot.openAdvice === 'raise'
+  if (spot.chart && spot.chart.chart.situation === 'open') {
+    const inRange = spot.chart.action === 'raise'
     if (action.type === 'raise') {
       return inRange
         ? chart('good', 'Standard open', `Standard open: ${cls} is in the ${pos} opening range.`)
@@ -64,6 +64,52 @@ export function reviewDecision(spot: Spot, action: Action): DecisionReview {
           )
         : chart('good', 'Correct fold', `Correct fold: ${cls} is outside the ${pos} opening range.`)
     }
+  }
+
+  if (spot.chart && action.type !== 'check') {
+    const { chart: c, action: rec } = spot.chart
+    const raise = c.raiseLabel
+    const vs3bet = c.situation === 'vs3bet'
+    const where = c.title
+    const taken = action.type
+    if (taken === rec) {
+      return chart(
+        'good',
+        rec === 'fold' ? 'Correct fold' : rec === 'call' ? 'Standard defend' : `Standard ${raise}`,
+        rec === 'fold'
+          ? `Correct fold: ${cls} isn't strong enough in this spot (${where}).`
+          : rec === 'call'
+            ? `Standard call: ${cls} is a call in this spot (${where}).`
+            : `Standard ${raise}: ${cls} is a ${raise} in this spot (${where}).`,
+      )
+    }
+    if (taken === 'fold') {
+      return chart(
+        rec === 'raise' && strength <= 0.05 ? 'blunder' : 'mistake',
+        vs3bet ? 'Overfolded vs a 3-bet' : 'Overfolded vs an open',
+        `Folded ${cls}, which the chart ${rec === 'raise' ? `${raise}s` : 'calls'} here (${where}).`,
+      )
+    }
+    if (taken === 'call') {
+      return rec === 'raise'
+        ? chart(
+            'ok',
+            vs3bet ? 'Missed a 4-bet' : 'Missed a 3-bet',
+            `Calling works, but the chart ${raise}s ${cls} here (${where}).`,
+          )
+        : chart(
+            'mistake',
+            vs3bet ? 'Called a 3-bet too wide' : 'Defended too wide',
+            `Called with ${cls}; the chart folds it here (${where}).`,
+          )
+    }
+    return rec === 'call'
+      ? chart('ok', `Raised a calling hand`, `The chart just calls ${cls} here (${where}).`)
+      : chart(
+          strength > 0.4 ? 'mistake' : 'ok',
+          vs3bet ? 'Light 4-bet' : 'Light 3-bet',
+          `${raise} with ${cls} is outside the chart here (${where}). It works only as a rare bluff.`,
+        )
   }
 
   const equity = spot.equity?.equity

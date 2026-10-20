@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import type { Spot } from './analysis'
 import { analyzeSpot, readPreflop } from './analysis'
 import { parseCards } from './card'
+import { getChart } from './charts'
 import { applyAction, createGame, startHand } from './game'
 import { describeEvents, netResult } from './history'
 import { RAISE_RANGE } from './range'
@@ -26,7 +27,7 @@ function spot(overrides: Partial<Spot>): Spot {
     equity: { win: 0.5, tie: 0, equity: 0.5 },
     equityNote: '',
     unopened: false,
-    openAdvice: null,
+    chart: null,
     made: null,
     outs: [],
     ...overrides,
@@ -54,7 +55,8 @@ describe('analyzeSpot', () => {
     expect(result.handClass).toBe('AA')
     expect(result.toCall).toBe(2)
     expect(result.requiredEquity).toBeCloseTo(2 / 5)
-    expect(result.openAdvice).toBe('raise')
+    expect(result.chart?.chart.id).toBe('open-UTG')
+    expect(result.chart?.action).toBe('raise')
     // No one has entered the pot yet, so equity is against one random hand.
     expect(result.opponents).toHaveLength(0)
     expect(result.equity!.equity).toBeGreaterThan(0.75)
@@ -79,7 +81,7 @@ describe('reviewDecision', () => {
         handClass: 'AQs',
         position: 'CO',
         unopened: true,
-        openAdvice: 'raise',
+        chart: { chart: getChart('open-CO'), action: 'raise' },
       }),
       { type: 'fold' },
     )
@@ -93,7 +95,7 @@ describe('reviewDecision', () => {
         handClass: '72o',
         position: 'UTG',
         unopened: true,
-        openAdvice: 'fold',
+        chart: { chart: getChart('open-UTG'), action: 'fold' },
       }),
       { type: 'fold' },
     )

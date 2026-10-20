@@ -1,4 +1,6 @@
 import type { Card } from './card'
+import type { ChartAction, PreflopChart } from './charts'
+import { chartAction, findPreflopChart } from './charts'
 import type { EquityResult, OutGroup } from './equity'
 import { estimateEquity, findOuts } from './equity'
 import type { GameState, HandEvent, Street } from './game'
@@ -6,6 +8,8 @@ import { liveSeats, totalPot } from './game'
 import type { HandValue } from './hand'
 import { evaluateHand } from './hand'
 import type { HandClass, Position, Range } from './range'
+import type { Personality } from './profiles'
+import { PROFILES } from './profiles'
 import {
   CALL_RANGE,
   LIMP_RANGE,
@@ -14,6 +18,7 @@ import {
   THREE_BET_RANGE,
   handClass,
   positions,
+  rangeFraction,
 } from './range'
 import type { Rng } from './rng'
 
@@ -23,14 +28,28 @@ export interface RangeRead {
   label: string
 }
 
-/** Guesses a player's range from their preflop actions so far. */
-export function readPreflop(events: HandEvent[], seat: number, bigBlind: number): RangeRead {
+/**
+ * Guesses a player's range from their preflop actions so far. A known personality changes
+ * the read (a maniac's raise means much less than a nit's), and a balanced player's open is
+ * read as the opening chart for their position.
+ */
+export function readPreflop(
+  events: HandEvent[],
+  seat: number,
+  bigBlind: number,
+  profile?: Personality,
+  position?: Position | null,
+): RangeRead {
+  const reads = profile ? PROFILES[profile].reads : null
+  const who = profile ? `${PROFILES[profile].label.toLowerCase()}, ` : ''
+  const label = (what: string, range: Range) =>
+    `${what} (${who}top ~${Math.round(rangeFraction(range) * 100)}%)`
   let raisesBefore = 0
   let read: RangeRead = { range: null, label: 'any two cards' }
   let strength = 0
-  const consider = (next: RangeRead, level: number) => {
+  const consider = (what: string, range: Range, level: number) => {
     if (level > strength) {
-      read = next
+      read = { range, label: label(what, range) }
       strength = level
     }
   }
@@ -38,13 +57,15 @@ export function readPreflop(events: HandEvent[], seat: number, bigBlind: number)
     if (e.type !== 'action' || e.street !== 'preflop') continue
     if (e.seat === seat) {
       if (e.action === 'raise' && raisesBefore > 0) {
-        consider({ range: THREE_BET_RANGE, label: 're-raised preflop (top ~6%)' }, 4)
+        consider('re-raised preflop', reads?.threeBet ?? THREE_BET_RANGE, 4)
       } else if (e.action === 'raise') {
-        consider({ range: RAISE_RANGE, label: 'raised preflop (top ~18%)' }, 3)
+        const chartOpen =
+          profile === 'balanced' && position && position !== 'BB' ? OPEN_RANGES[position] : null
+        consider('raised preflop', reads?.open ?? chartOpen ?? RAISE_RANGE, 3)
       } else if (e.action === 'call' && e.to > bigBlind) {
-        consider({ range: CALL_RANGE, label: 'called a raise (top ~40%)' }, 2)
+        consider('called a raise', reads?.call ?? CALL_RANGE, 2)
       } else if (e.action === 'call') {
-        consider({ range: LIMP_RANGE, label: 'limped (top ~70%)' }, 1)
+        consider('limped', reads?.limp ?? LIMP_RANGE, 1)
       }
     }
     if (e.action === 'raise') raisesBefore++
@@ -70,10 +91,10 @@ export interface Spot {
   equity: EquityResult | null
   /** What the equity is measured against, for display. */
   equityNote: string
-  /** Preflop with no raise yet, so the opening charts apply. */
+  /** Preflop with no raise yet. */
   unopened: boolean
-  /** Opening-chart advice when unopened and not in the big blind. */
-  openAdvice: 'raise' | 'fold' | null
+  /** The preflop chart for this decision and what it recommends, when one applies. */
+  chart: { chart: PreflopChart; action: ChartAction } | null
   made: HandValue | null
   outs: OutGroup[]
 }
@@ -83,16 +104,19 @@ export interface SpotOptions {
   iterations?: number
   rng?: Rng
   withOuts?: boolean
+  /** Known personality per seat, used to read opponents' ranges. */
+  profiles?: (Personality | undefined)[]
 }
 
 /** Everything a player can know about their decision: odds, equity, chart advice. */
 export function analyzeSpot(s: GameState, seat: number, options: SpotOptions = {}): Spot {
-  const { iterations = 2000, rng = Math.random, withOuts = true } = options
+  const { iterations = 2000, rng = Math.random, withOuts = true, profiles = [] } = options
   const p = s.players[seat]
-  const position = positions(
+  const seatPositions = positions(
     s.players.map((q) => q.inHand),
     s.button,
-  )[seat]
+  )
+  const position = seatPositions[seat]
   const pot = totalPot(s)
   const toCall = Math.min(Math.max(0, s.currentBet - p.bet), p.stack)
   // Preflop, only players who put money in voluntarily are likely to see a flop.
@@ -102,7 +126,11 @@ export function analyzeSpot(s: GameState, seat: number, options: SpotOptions = {
     )
   const opponents = liveSeats(s)
     .filter((i) => i !== seat && (s.street !== 'preflop' || entered(i)))
-    .map((i) => ({ seat: i, name: s.players[i].name, read: readPreflop(s.events, i, s.bigBlind) }))
+    .map((i) => ({
+      seat: i,
+      name: s.players[i].name,
+      read: readPreflop(s.events, i, s.bigBlind, profiles[i], seatPositions[i]),
+    }))
   const equityNote =
     opponents.length === 0
       ? 'vs one random hand (no one has entered the pot)'
@@ -112,12 +140,8 @@ export function analyzeSpot(s: GameState, seat: number, options: SpotOptions = {
   const unopened =
     s.street === 'preflop' && !s.events.some((e) => e.type === 'action' && e.action === 'raise')
   const cls = handClass(p.hole[0], p.hole[1])
-  const openAdvice =
-    unopened && position && position !== 'BB'
-      ? OPEN_RANGES[position].has(cls)
-        ? 'raise'
-        : 'fold'
-      : null
+  const preflopChart =
+    s.street === 'preflop' ? findPreflopChart(s.events, seat, seatPositions) : null
 
   return {
     seat,
@@ -142,7 +166,7 @@ export function analyzeSpot(s: GameState, seat: number, options: SpotOptions = {
         : null,
     equityNote,
     unopened,
-    openAdvice,
+    chart: preflopChart ? { chart: preflopChart, action: chartAction(preflopChart, cls) } : null,
     made: s.board.length >= 3 ? evaluateHand([...p.hole, ...s.board]) : null,
     outs: withOuts ? findOuts(p.hole, s.board) : [],
   }

@@ -8,6 +8,9 @@ import type { Range } from './range'
 import { combos } from './range'
 import type { Rng } from './rng'
 
+/** One specific two-card holding. */
+export type Combo = [Card, Card]
+
 export interface EquityResult {
   /** Share of runouts hero wins outright. */
   win: number
@@ -20,8 +23,11 @@ export interface EquityResult {
 export interface EquityOptions {
   hero: Card[]
   board: Card[]
-  /** One entry per opponent: their likely range, or null for any two cards. */
-  opponents: (Range | null)[]
+  /**
+   * One entry per opponent: their likely range as hand classes or explicit combos,
+   * or null for any two cards.
+   */
+  opponents: (Range | Combo[] | null)[]
   iterations?: number
   rng?: Rng
 }
@@ -45,12 +51,11 @@ export function estimateEquity({
   const candidates = opponents.map((range) => {
     if (!range) return null
     const flat: CardId[] = []
-    for (const cls of range) {
-      for (const [a, b] of combos(cls)) {
-        const ia = toId(a)
-        const ib = toId(b)
-        if (!dead[ia] && !dead[ib]) flat.push(ia, ib)
-      }
+    const list = Array.isArray(range) ? range : [...range].flatMap(combos)
+    for (const [a, b] of list) {
+      const ia = toId(a)
+      const ib = toId(b)
+      if (!dead[ia] && !dead[ib]) flat.push(ia, ib)
     }
     return flat.length > 0 ? flat : null
   })

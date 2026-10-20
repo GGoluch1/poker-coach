@@ -32,7 +32,7 @@ describe('drills', () => {
   })
 
   it('grades preflop opens against the chart', () => {
-    const item: DrillItem = { kind: 'preflop', position: 'UTG', handClass: 'AKo' }
+    const item: DrillItem = { kind: 'preflop', chartId: 'open-UTG', handClass: 'AKo' }
     expect(gradeDrill(item, { kind: 'preflop', action: 'raise' }).correct).toBe(true)
     expect(gradeDrill(item, { kind: 'preflop', action: 'fold' }).correct).toBe(false)
   })
