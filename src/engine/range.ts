@@ -56,7 +56,8 @@ export function combos(cls: HandClass): [Card, Card][] {
 
 /**
  * Parses range notation: "22+", "77-99", "A2s+", "KTs+", "AJo+", "K9s-K6s", "QJo", "T9s".
- * "XYs+" raises the second card up to one below the first.
+ * "XYs+" raises the second card up to one below the first. Without s or o ("AQ+", "KJ")
+ * both suited and offsuit hands are included.
  */
 export function parseRange(text: string): Range {
   const range: Range = new Set()
@@ -74,10 +75,10 @@ export function parseRange(text: string): Range {
         range.add(rankChar(r) + rankChar(r))
       continue
     }
-    if (r2 > r1 || !suit) throw new Error(`invalid range part: "${raw}"`)
+    if (r2 > r1) throw new Error(`invalid range part: "${raw}"`)
     const top = plus ? r1 - 1 : e2 ? charRank(e2) : r2
     for (let r = Math.min(r2, top); r <= Math.max(r2, top); r++) {
-      range.add(rankChar(r1) + rankChar(r) + suit)
+      for (const sfx of suit ? [suit] : ['s', 'o']) range.add(rankChar(r1) + rankChar(r) + sfx)
     }
   }
   return range

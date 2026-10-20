@@ -47,10 +47,10 @@ describe('parseRange', () => {
     expect([...parseRange('KTs+')]).toEqual(['KTs', 'KJs', 'KQs'])
     expect([...parseRange('A5s-A2s')]).toEqual(['A2s', 'A3s', 'A4s', 'A5s'])
     expect([...parseRange('QJo, t9s')]).toEqual(['QJo', 'T9s'])
+    expect([...parseRange('AQ+')]).toEqual(['AQs', 'AQo', 'AKs', 'AKo'])
   })
 
   it('rejects bad notation', () => {
-    expect(() => parseRange('AK')).toThrow()
     expect(() => parseRange('KAs')).toThrow()
     expect(() => parseRange('X2s')).toThrow()
   })
