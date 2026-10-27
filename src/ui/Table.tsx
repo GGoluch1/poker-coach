@@ -9,29 +9,20 @@ import { positions } from '../engine/range'
 import { CardView } from './CardView'
 import { HERO } from './useGame'
 
+/** Avatar hues, one per seat. */
+const SEAT_HUES = [152, 210, 28, 280, 340, 190]
 const ACTION_LABEL = { fold: 'Fold', check: 'Check', call: 'Call', bet: 'Bet', raise: 'Raise' }
 
 interface Props {
   game: GameState
-  onNextHand?: () => void
-  onRebuy?: () => void
-  gameOver?: boolean
   profiles?: (Personality | undefined)[]
   /** Per-seat stats, shown as VPIP/PFR on each opponent. */
   seatStats?: PlayStats[]
-  /** Replay mode: no result banner or next-hand button. */
+  /** Replay mode: no result banner. */
   replay?: boolean
 }
 
-export function Table({
-  game,
-  onNextHand,
-  onRebuy,
-  gameOver = false,
-  profiles = [],
-  seatStats,
-  replay = false,
-}: Props) {
+export function Table({ game, profiles = [], seatStats, replay = false }: Props) {
   const n = game.players.length
   const pos = positions(
     game.players.map((p) => p.inHand),
@@ -71,22 +62,6 @@ export function Table({
           {game.handOver && !replay && (
             <div className="result">
               <ResultLine game={game} />
-              {gameOver ? (
-                <>
-                  <span className="result-over">
-                    {game.players[HERO].stack > 0 ? 'You won the table!' : 'You are out of chips.'}
-                  </span>
-                  {game.players[HERO].stack === 0 && onRebuy && (
-                    <button className="btn btn-primary" onClick={onRebuy} autoFocus>
-                      Rebuy for 100 bb
-                    </button>
-                  )}
-                </>
-              ) : (
-                <button className="btn btn-primary" onClick={onNextHand} autoFocus>
-                  Deal next hand
-                </button>
-              )}
             </div>
           )}
         </div>
@@ -120,11 +95,15 @@ export function Table({
                     <CardView key={i} card={c} size="md" hidden={!reveal} dim={p.folded} />
                   ))}
               </div>
+              <div
+                className="seat-avatar"
+                style={{ '--hue': SEAT_HUES[seat % SEAT_HUES.length] } as CSSProperties}
+              >
+                {isHero ? 'You' : p.name[0]}
+                {pos[seat] && <span className="seat-pos">{pos[seat]}</span>}
+              </div>
               <div className="seat-plate">
-                <div className="seat-name">
-                  {isHero ? 'You' : p.name}
-                  {pos[seat] && <span className="seat-pos">{pos[seat]}</span>}
-                </div>
+                {!isHero && <div className="seat-name">{p.name}</div>}
                 <div className="seat-stack">{p.inHand || p.stack > 0 ? p.stack : 'Out'}</div>
                 {profiles[seat] && (
                   <div className="seat-profile" title={PROFILES[profiles[seat]].description}>
@@ -141,19 +120,19 @@ export function Table({
                     )}
                   </div>
                 )}
-                {won ? (
-                  <div className="seat-badge badge-win">Wins {won}</div>
-                ) : p.allIn ? (
-                  <div className="seat-badge badge-allin">All in</div>
-                ) : p.folded && p.inHand ? (
-                  <div className="seat-badge">Folded</div>
-                ) : action ? (
-                  <div className="seat-badge">{action}</div>
-                ) : null}
-                {game.showdown && live && !isHero && game.board.length === 5 && (
-                  <div className="seat-hand">{describeShown(game, seat)}</div>
-                )}
               </div>
+              {won ? (
+                <div className="seat-badge badge-win">Wins {won}</div>
+              ) : p.allIn ? (
+                <div className="seat-badge badge-allin">All in</div>
+              ) : p.folded && p.inHand ? (
+                <div className="seat-badge badge-fold">Folded</div>
+              ) : action ? (
+                <div className="seat-badge">{action}</div>
+              ) : null}
+              {game.showdown && live && !isHero && game.board.length === 5 && (
+                <div className="seat-hand">{describeShown(game, seat)}</div>
+              )}
               {seat === game.button && (
                 <span className="dealer" title="Dealer button">
                   D
@@ -165,6 +144,7 @@ export function Table({
                   className="bet"
                   style={{ '--dx': -Math.cos(angle), '--dy': -Math.sin(angle) } as CSSProperties}
                 >
+                  <span className="chip" aria-hidden />
                   {p.bet}
                   {seat === bb && game.street === 'preflop' && p.bet === game.bigBlind && (
                     <span className="muted"> BB</span>

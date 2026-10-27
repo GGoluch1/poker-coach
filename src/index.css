@@ -1,110 +1,69 @@
 :root {
-  --bg: #f3f0e8;
-  --surface: #ffffff;
-  --surface-2: #f7f5f0;
-  --text: #1c2228;
-  --muted: #5d6670;
-  --border: #ddd6c7;
-  --accent: #0f766e;
-  --accent-text: #ffffff;
-  --good: #15803d;
-  --good-bg: #e7f5ec;
-  --ok: #57606a;
-  --ok-bg: #eef0f2;
-  --warn: #b45309;
-  --warn-bg: #fdf1e3;
-  --bad: #b91c1c;
-  --bad-bg: #fbe9e9;
-  --felt: #1d6b48;
-  --felt-dark: #13503540;
-  --rail: #4a2f18;
-  --on-felt: #f2f7f3;
-  --card-bg: #ffffff;
-  --card-back: #8a2f3c;
-  --suit-s: #1c2228;
-  --suit-h: #c62828;
-  --suit-d: #1d5fbf;
-  --suit-c: #23803f;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.06);
-  --act-fold: #9aa3ad;
-  --call: #4f86c6;
-  --call-text: #ffffff;
-  --act-1: #3f9a5c;
-  --act-2: #d9822b;
-  --act-3: #c2413a;
-  --act-4: #8e2a6b;
+  --bg: #0a0d12;
+  --surface: #12161d;
+  --surface-2: #191e27;
+  --surface-3: #232a35;
+  --border: #20262f;
+  --border-strong: #2e3642;
+  --text: #f1f3f6;
+  --muted: #8a93a3;
+  --faint: #5c6573;
+  --accent: #3ddc97;
+  --accent-text: #052016;
+  --accent-soft: rgba(61, 220, 151, 0.13);
+  --good: #3ddc97;
+  --good-bg: rgba(61, 220, 151, 0.11);
+  --ok: #a9b2bf;
+  --ok-bg: rgba(169, 178, 191, 0.1);
+  --warn: #f5b544;
+  --warn-bg: rgba(245, 181, 68, 0.12);
+  --bad: #ff7676;
+  --bad-bg: rgba(255, 118, 118, 0.12);
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-  font: 15px/1.45 var(--sans);
+  /* Actions, shared by buttons, charts and the solver: fold slate, passive green, aggressive coral. */
+  --fold: #2a3140;
+  --fold-text: #d3d9e2;
+  --call: #3ddc97;
+  --call-text: #052016;
+  --raise: #f0605d;
+  --raise-text: #ffffff;
+  --act-fold: #8592a6;
+  --act-1: #3ddc97;
+  --act-2: #f5b544;
+  --act-3: #f0605d;
+  --act-4: #d55fd8;
+
+  --felt: #11603e;
+  --felt-light: #1b8a59;
+  --felt-dark: #093b26;
+  --rail: #0d1117;
+  --on-felt: #f2f7f3;
+
+  --card-bg: #fbfbf8;
+  --card-back: #3a47c9;
+  --card-back-2: #2a3596;
+  /* Four-color deck: on white cards, and as text on dark surfaces. */
+  --suit-s: #15181d;
+  --suit-h: #e03a4a;
+  --suit-d: #2f6fe0;
+  --suit-c: #1f9d55;
+  --suit-s-text: #e7eaef;
+  --suit-h-text: #ff7d88;
+  --suit-d-text: #6aa2ff;
+  --suit-c-text: #4fd08a;
+
+  --radius: 20px;
+  --sans:
+    Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI Variable Text', 'Segoe UI', Roboto,
+    sans-serif;
+  --mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font: 15px/1.5 var(--sans);
+  font-feature-settings: 'cv11', 'ss01';
   color: var(--text);
   background: var(--bg);
-  color-scheme: light;
-  -webkit-font-smoothing: antialiased;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --bg: #0f1418;
-    --surface: #182027;
-    --surface-2: #1e272f;
-    --text: #e4e9ec;
-    --muted: #9aa6b0;
-    --border: #2c3740;
-    --accent: #2bb3a3;
-    --accent-text: #08201d;
-    --good: #4ade80;
-    --good-bg: #173324;
-    --ok: #aab4bd;
-    --ok-bg: #232d35;
-    --warn: #fbbf24;
-    --warn-bg: #3a2d12;
-    --bad: #f87171;
-    --bad-bg: #3b1d1d;
-    --felt: #17573b;
-    --rail: #33200f;
-    --card-bg: #f4f4f1;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
-    --act-fold: #5b6670;
-    --call: #3d6fae;
-    --call-text: #eef4fb;
-    --act-1: #3b8f57;
-    --act-2: #d08a3c;
-    --act-3: #d0574f;
-    --act-4: #b04a8f;
-    color-scheme: dark;
-  }
-}
-
-:root[data-theme='dark'] {
-  --bg: #0f1418;
-  --surface: #182027;
-  --surface-2: #1e272f;
-  --text: #e4e9ec;
-  --muted: #9aa6b0;
-  --border: #2c3740;
-  --accent: #2bb3a3;
-  --accent-text: #08201d;
-  --good: #4ade80;
-  --good-bg: #173324;
-  --ok: #aab4bd;
-  --ok-bg: #232d35;
-  --warn: #fbbf24;
-  --warn-bg: #3a2d12;
-  --bad: #f87171;
-  --bad-bg: #3b1d1d;
-  --felt: #17573b;
-  --rail: #33200f;
-  --card-bg: #f4f4f1;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
-  --act-fold: #5b6670;
-  --call: #3d6fae;
-  --call-text: #eef4fb;
-  --act-1: #3b8f57;
-  --act-2: #d08a3c;
-  --act-3: #d0574f;
-  --act-4: #b04a8f;
   color-scheme: dark;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 *,
@@ -116,7 +75,13 @@
 body {
   margin: 0;
   min-width: 320px;
-  background: var(--bg);
+  background:
+    radial-gradient(1200px 600px at 50% -200px, rgba(61, 220, 151, 0.07), transparent 70%),
+    var(--bg);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 h1,
@@ -134,6 +99,11 @@ textarea {
   color: inherit;
 }
 
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -141,4 +111,13 @@ textarea {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }

@@ -56,6 +56,12 @@ export function PlayPage() {
   return (
     <>
       <div className="toolbar">
+        <div className="table-info">
+          <span className="pill-stat">
+            NLH {game.smallBlind}/{game.bigBlind}
+          </span>
+          <span className="muted small">Hand #{game.handNumber}</span>
+        </div>
         <label className="toggle">
           <input type="checkbox" checked={hints} onChange={(e) => setHints(e.target.checked)} />
           Live hints
@@ -81,41 +87,46 @@ export function PlayPage() {
             ))}
           </select>
         </label>
-        <button className="btn" onClick={startNew}>
+        <button className="btn btn-small" onClick={startNew}>
           New game
         </button>
       </div>
 
       <div className="layout">
         <section className="play">
-          <Table
-            game={game}
-            onNextHand={nextHand}
-            onRebuy={rebuy}
-            gameOver={gameOver}
-            profiles={profiles}
-            seatStats={seatStats}
-          />
+          <Table game={game} profiles={profiles} seatStats={seatStats} />
           {heroTurn ? (
             <ActionBar
               key={`${game.handNumber}-${game.events.length}`}
               game={game}
               onAct={heroAct}
             />
+          ) : game.handOver ? (
+            <div className="action-bar action-wait">
+              {gameOver && (
+                <span className="muted">
+                  {hero.stack > 0
+                    ? 'You won every chip. Start a new game to play again.'
+                    : 'You are out of chips. Rebuy or start a new game.'}
+                </span>
+              )}
+              {!gameOver ? (
+                <button className="btn btn-primary btn-wide" onClick={nextHand} autoFocus>
+                  Deal next hand <kbd>Enter</kbd>
+                </button>
+              ) : (
+                hero.stack === 0 && (
+                  <button className="btn btn-primary btn-wide" onClick={rebuy} autoFocus>
+                    Rebuy for 100 bb
+                  </button>
+                )
+              )}
+            </div>
           ) : (
             <div className="action-bar action-wait muted">
-              {gameOver
-                ? hero.stack > 0
-                  ? 'You won every chip. Start a new game to play again.'
-                  : 'You are out of chips. Rebuy or start a new game.'
-                : game.handOver
-                  ? `Hand #${game.handNumber} is over.`
-                  : `${game.players[game.toAct ?? HERO].name} is thinking…`}
+              {game.players[game.toAct ?? HERO].name} is thinking…
             </div>
           )}
-          <p className="blinds muted small">
-            No-limit hold'em · blinds {game.smallBlind}/{game.bigBlind} · hand #{game.handNumber}
-          </p>
         </section>
 
         <aside className="sidebar">

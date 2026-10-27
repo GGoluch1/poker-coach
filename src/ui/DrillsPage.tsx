@@ -4,50 +4,60 @@ import { drillKey, gradeDrill, preflopChartOf } from '../engine/drills'
 import { dueCards } from '../engine/srs'
 import { randomSeed, runInWorker } from '../worker/client'
 import { DrillQuestion } from './DrillQuestion'
+import type { IconName } from './Icon'
+import { Icon } from './Icon'
 import { recordDeckAnswer, recordDrill, useProgress } from './progress'
 import { RangeChart } from './RangeChart'
 import { useNow } from './useNow'
 
 export type DrillMode = GeneratedKind | 'review'
 
-const DRILLS: { id: DrillMode; title: string; blurb: string }[] = [
+const DRILLS: { id: DrillMode; title: string; blurb: string; icon: IconName }[] = [
   {
     id: 'outs',
+    icon: 'target',
     title: 'Outs',
     blurb: 'Count the cards that improve your hand, and see how the rule of 2 and 4 compares.',
   },
   {
     id: 'callfold',
+    icon: 'timer',
     title: 'Call or fold',
     blurb: 'Real spots facing a bet. Weigh equity against pot odds before the timer runs out.',
   },
   {
     id: 'preflop',
+    icon: 'grid',
     title: 'Preflop charts',
     blurb: 'Open, defend against an open, or face a 3-bet: raise, call or fold by the charts.',
   },
   {
     id: 'texture',
+    icon: 'waves',
     title: 'Board texture',
     blurb: 'Classify flops by suits, connectedness and how wet they are.',
   },
   {
     id: 'mdf',
+    icon: 'percent',
     title: 'Defense and bluff math',
     blurb: 'Minimum defense frequency, bluff break-even and pot odds for any bet size.',
   },
   {
     id: 'combos',
+    icon: 'cards',
     title: 'Combos and blockers',
     blurb: 'Count how many combos of a hand remain once you see the board and your cards.',
   },
   {
     id: 'setmine',
+    icon: 'gem',
     title: 'Set mining',
     blurb: 'Is calling with a small pair profitable at this stack depth? Implied odds and SPR.',
   },
   {
     id: 'review',
+    icon: 'repeat',
     title: 'Review missed spots',
     blurb: 'Spaced repetition: drills you missed and mistakes from your own hands come back here.',
   },
@@ -159,16 +169,31 @@ export function DrillsPage({ initialMode }: { initialMode: DrillMode | null }) {
           {DRILLS.map((d) => {
             const score = d.id === 'review' ? null : progress.drills[d.id]
             return (
-              <button key={d.id} className="drill-card" onClick={() => start(d.id)}>
+              <button
+                key={d.id}
+                className={`drill-card${d.id === 'review' ? ' drill-card-review' : ''}`}
+                onClick={() => start(d.id)}
+              >
+                <span className="drill-icon">
+                  <Icon name={d.icon} size={22} />
+                </span>
                 <span className="drill-title">
                   {d.title}
                   {d.id === 'review' && dueTotal > 0 && <span className="badge">{dueTotal}</span>}
                 </span>
                 <span className="muted small">{d.blurb}</span>
                 {score && score.attempts > 0 && (
-                  <span className="small drill-score">
-                    {Math.round((score.correct / score.attempts) * 100)}% of {score.attempts} · best
-                    streak {score.bestStreak}
+                  <span className="drill-score small">
+                    <span className="meter" aria-hidden>
+                      <span
+                        className="meter-fill"
+                        style={{ width: `${(score.correct / score.attempts) * 100}%` }}
+                      />
+                    </span>
+                    <span>
+                      {Math.round((score.correct / score.attempts) * 100)}% of {score.attempts} ·
+                      best streak {score.bestStreak}
+                    </span>
                   </span>
                 )}
               </button>
@@ -185,14 +210,25 @@ export function DrillsPage({ initialMode }: { initialMode: DrillMode | null }) {
   return (
     <div className="page drill-page">
       <div className="drill-header">
-        <button className="btn btn-quiet" onClick={() => setMode(null)}>
-          ← All drills
+        <button
+          className="btn btn-quiet btn-icon"
+          onClick={() => setMode(null)}
+          aria-label="All drills"
+          title="All drills"
+        >
+          <Icon name="chevronLeft" />
         </button>
         <h2 className="page-title">{info.title}</h2>
-        <span className="muted small">
-          This session {session.correct}/{session.answered}
-          {score && ` · streak ${score.streak}`}
+        <span className="pill-stat">
+          {session.correct}/{session.answered}
+          <span className="muted"> this session</span>
         </span>
+        {score && score.streak > 0 && (
+          <span className="pill-stat">
+            {score.streak}
+            <span className="muted"> streak</span>
+          </span>
+        )}
         {mode === 'callfold' && (
           <label className="toggle small">
             <input type="checkbox" checked={timed} onChange={(e) => setTimed(e.target.checked)} />

@@ -3,6 +3,8 @@ import { dueCards } from './engine/srs'
 import { DrillsPage } from './ui/DrillsPage'
 import type { DrillMode } from './ui/DrillsPage'
 import { HandsPage } from './ui/HandsPage'
+import type { IconName } from './ui/Icon'
+import { Icon } from './ui/Icon'
 import { PlayPage } from './ui/PlayPage'
 import { ProgressPage } from './ui/ProgressPage'
 import { useProgress } from './ui/progress'
@@ -11,12 +13,12 @@ import { useNow } from './ui/useNow'
 import './App.css'
 
 type Page = 'play' | 'drills' | 'hands' | 'solver' | 'progress'
-const PAGES: { id: Page; label: string }[] = [
-  { id: 'play', label: 'Play' },
-  { id: 'drills', label: 'Drills' },
-  { id: 'hands', label: 'Hands' },
-  { id: 'solver', label: 'Solver' },
-  { id: 'progress', label: 'Progress' },
+const PAGES: { id: Page; label: string; icon: IconName }[] = [
+  { id: 'play', label: 'Play', icon: 'spade' },
+  { id: 'drills', label: 'Drills', icon: 'bolt' },
+  { id: 'hands', label: 'Hands', icon: 'layers' },
+  { id: 'solver', label: 'Solver', icon: 'cpu' },
+  { id: 'progress', label: 'Progress', icon: 'chart' },
 ]
 const PAGE_KEY = 'poker-coach:page'
 
@@ -49,10 +51,10 @@ export default function App() {
   return (
     <div className="app">
       <header className="topbar">
-        <h1>
-          <span className="logo" aria-hidden>
+        <h1 className="brand">
+          <span className="brand-mark" aria-hidden>
             ♠
-          </span>{' '}
+          </span>
           Poker Coach
         </h1>
         <nav className="nav" aria-label="Sections">
@@ -63,7 +65,8 @@ export default function App() {
               aria-current={page === p.id ? 'page' : undefined}
               onClick={() => go(p.id)}
             >
-              {p.label}
+              <Icon name={p.icon} />
+              <span className="nav-label">{p.label}</span>
               {p.id === 'drills' && due > 0 && (
                 <span className="badge" title={`${due} missed spots due for review`}>
                   {due}
@@ -74,7 +77,7 @@ export default function App() {
         </nav>
       </header>
 
-      <main>
+      <main className="main">
         {page === 'play' && <PlayPage />}
         {page === 'drills' && <DrillsPage key={drillMode ?? 'menu'} initialMode={drillMode} />}
         {page === 'hands' && <HandsPage />}

@@ -254,11 +254,16 @@ function ImportedHandView({ hand, onRemove }: { hand: ImportedHand; onRemove: ()
       </div>
       <Table game={state} replay />
       <div className="replay-controls">
-        <button className="btn btn-small" onClick={() => setStep(0)} disabled={step === 0}>
+        <button
+          className="btn btn-icon"
+          onClick={() => setStep(0)}
+          aria-label="First action"
+          disabled={step === 0}
+        >
           ⏮
         </button>
         <button
-          className="btn btn-small"
+          className="btn btn-icon"
           onClick={() => setStep((x) => Math.max(0, x - 1))}
           disabled={step === 0}
           aria-label="Previous action"
@@ -269,7 +274,7 @@ function ImportedHandView({ hand, onRemove }: { hand: ImportedHand; onRemove: ()
           {step === 0 ? 'Cards dealt, blinds posted' : lines.at(-1)}
         </span>
         <button
-          className="btn btn-small"
+          className="btn btn-icon"
           onClick={() => setStep((x) => Math.min(states.length - 1, x + 1))}
           disabled={step === states.length - 1}
           aria-label="Next action"
@@ -277,8 +282,9 @@ function ImportedHandView({ hand, onRemove }: { hand: ImportedHand; onRemove: ()
           ▶
         </button>
         <button
-          className="btn btn-small"
+          className="btn btn-icon"
           onClick={() => setStep(states.length - 1)}
+          aria-label="Last action"
           disabled={step === states.length - 1}
         >
           ⏭
