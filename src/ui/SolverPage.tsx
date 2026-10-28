@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react'
-import { cardLabel, cardToString, parseCards } from '../engine/card'
+import { cardToString, parseCards } from '../engine/card'
 import { createDeck, shuffle } from '../engine/deck'
 import type { Range } from '../engine/range'
 import { GRID_RANKS, gridClass, parseRange, rangeFraction } from '../engine/range'
 import type { SolverResult } from '../engine/solver'
 import { runInWorker } from '../worker/client'
+import { CardText } from './CardView'
+import { PageHeader } from './PageHeader'
+import { HOME_CRUMB } from './routes'
 
 const BET_SIZES = [
   { f: 0.33, label: '33%' },
@@ -104,13 +107,12 @@ export function SolverPage() {
 
   return (
     <div className="page">
-      <h2 className="page-title">River solver</h2>
-      <p className="muted">
+      <PageHeader title="River solver" crumbs={[HOME_CRUMB, { label: 'Study' }]}>
         Computes a game-theory-optimal strategy for one river decision with CFR+, an algorithm that
         improves both players' strategies until neither can gain by changing. It's a deliberately
         small game: OOP checks or bets, IP checks back or bets, and facing a bet you call or fold.
         There are no raises.
-      </p>
+      </PageHeader>
 
       <div className="solver-layout">
         <form
@@ -129,7 +131,11 @@ export function SolverPage() {
               </button>
             </span>
             {parsed.game && (
-              <span className="muted small">{parsed.game.board.map(cardLabel).join(' ')}</span>
+              <span className="small">
+                {parsed.game.board.map((c) => (
+                  <CardText key={`${c.rank}${c.suit}`} card={c} />
+                ))}
+              </span>
             )}
           </label>
           <label className="field">

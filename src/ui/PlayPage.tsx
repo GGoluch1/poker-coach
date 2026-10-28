@@ -5,6 +5,7 @@ import { handClass, positions } from '../engine/range'
 import { ActionBar } from './ActionBar'
 import { CoachPanel } from './CoachPanel'
 import { HistoryPanel } from './HistoryPanel'
+import { PageHeader } from './PageHeader'
 import { RangeChart } from './RangeChart'
 import { Table } from './Table'
 import type { Lineup } from './useGame'
@@ -55,42 +56,49 @@ export function PlayPage() {
 
   return (
     <>
-      <div className="toolbar">
-        <div className="table-info">
+      <PageHeader
+        title="Play"
+        compact
+        actions={
+          <div className="toolbar">
+            <label className="toggle">
+              <input type="checkbox" checked={hints} onChange={(e) => setHints(e.target.checked)} />
+              Live hints
+            </label>
+            <label>
+              <span className="sr-only">Opponents</span>
+              <select value={opponents} onChange={(e) => setOpponents(Number(e.target.value))}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <option key={n} value={n}>
+                    {n} opponent{n === 1 ? '' : 's'}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span className="sr-only">Opponent types</span>
+              <select value={lineup} onChange={(e) => setLineup(e.target.value as Lineup)}>
+                <option value="mixed">Mixed opponents</option>
+                {PERSONALITIES.map((p) => (
+                  <option key={p} value={p}>
+                    All {PROFILES[p].plural}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button className="btn btn-small" onClick={startNew}>
+              New game
+            </button>
+          </div>
+        }
+      >
+        <span className="table-info">
           <span className="pill-stat">
             NLH {game.smallBlind}/{game.bigBlind}
           </span>
           <span className="muted small">Hand #{game.handNumber}</span>
-        </div>
-        <label className="toggle">
-          <input type="checkbox" checked={hints} onChange={(e) => setHints(e.target.checked)} />
-          Live hints
-        </label>
-        <label>
-          <span className="sr-only">Opponents</span>
-          <select value={opponents} onChange={(e) => setOpponents(Number(e.target.value))}>
-            {[1, 2, 3, 4, 5].map((n) => (
-              <option key={n} value={n}>
-                {n} opponent{n === 1 ? '' : 's'}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span className="sr-only">Opponent types</span>
-          <select value={lineup} onChange={(e) => setLineup(e.target.value as Lineup)}>
-            <option value="mixed">Mixed opponents</option>
-            {PERSONALITIES.map((p) => (
-              <option key={p} value={p}>
-                All {PROFILES[p].plural}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button className="btn btn-small" onClick={startNew}>
-          New game
-        </button>
-      </div>
+        </span>
+      </PageHeader>
 
       <div className="layout">
         <section className="play">

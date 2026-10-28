@@ -1,11 +1,11 @@
 import type { DrillKind } from '../engine/drills'
 import { BOX_INTERVALS, dueCards } from '../engine/srs'
 import { statLines } from '../engine/stats'
-import type { DrillMode } from './DrillsPage'
+import { PageHeader } from './PageHeader'
 import { resetProgress, useProgress } from './progress'
+import { HOME_CRUMB, href } from './routes'
+import { LEAK_ADVICE } from './siteMap'
 import { useNow } from './useNow'
-
-type Navigate = (page: 'drills', mode: DrillMode) => void
 
 const DRILL_NAMES: Record<DrillKind, string> = {
   outs: 'Outs',
@@ -18,55 +18,6 @@ const DRILL_NAMES: Record<DrillKind, string> = {
   setmine: 'Set mining',
 }
 
-/** What to practice for each leak, and why it matters. */
-const LEAK_ADVICE: Record<string, { tip: string; drill?: DrillMode }> = {
-  'Folded an opening hand': {
-    tip: 'Folding hands from the chart gives up easy profit. Learn the opening ranges.',
-    drill: 'preflop',
-  },
-  'Opened outside range': {
-    tip: 'Opening too wide out of position costs chips over time.',
-    drill: 'preflop',
-  },
-  Limped: {
-    tip: 'Raise or fold when you are first in; limping invites trouble.',
-    drill: 'preflop',
-  },
-  'Called without odds': {
-    tip: 'Compare your equity with the price before calling.',
-    drill: 'callfold',
-  },
-  'Folded with enough equity': {
-    tip: 'When the pot lays you a good price, calling with a decent hand is profitable.',
-    drill: 'callfold',
-  },
-  'Folded when check was free': { tip: 'Never fold when you can check for free.' },
-  'Overfolded vs an open': {
-    tip: 'You fold too many hands the charts defend against a raise.',
-    drill: 'preflop',
-  },
-  'Defended too wide': {
-    tip: 'Calling raises with weak hands bleeds chips, especially out of position.',
-    drill: 'preflop',
-  },
-  'Overfolded vs a 3-bet': {
-    tip: 'Folding too much to 3-bets lets opponents re-raise you with anything.',
-    drill: 'preflop',
-  },
-  'Called a 3-bet too wide': {
-    tip: 'Calling 3-bets with marginal hands puts you in big pots with a weak range.',
-    drill: 'preflop',
-  },
-  'Light 3-bet': {
-    tip: 'Re-raising outside the chart works only as a rare bluff.',
-    drill: 'preflop',
-  },
-  'Light 4-bet': { tip: 'Four-bet bluffs are expensive; keep them rare.', drill: 'preflop' },
-  'Missed river value': {
-    tip: 'With a strong hand on the river, bet so worse hands can pay you off.',
-  },
-}
-
 const pct = (x: number) => `${Math.round(x * 100)}%`
 
 function boxLabel(i: number) {
@@ -74,7 +25,7 @@ function boxLabel(i: number) {
   return ms < 3_600_000 ? `${ms / 60_000} min` : `${ms / 86_400_000} d`
 }
 
-export function ProgressPage({ onNavigate }: { onNavigate: Navigate }) {
+export function ProgressPage() {
   const progress = useProgress()
   const { stats } = progress
   const lines = statLines(stats)
@@ -84,15 +35,21 @@ export function ProgressPage({ onNavigate }: { onNavigate: Navigate }) {
 
   return (
     <div className="page">
-      <div className="page-head">
-        <h2 className="page-title">Progress</h2>
-        <button
-          className="btn btn-quiet"
-          onClick={() => confirm('Reset all stats, leaks and review cards?') && resetProgress()}
-        >
-          Reset
-        </button>
-      </div>
+      <PageHeader
+        title="Progress"
+        crumbs={[HOME_CRUMB]}
+        actions={
+          <button
+            className="btn btn-quiet"
+            onClick={() => confirm('Reset all stats, leaks and review cards?') && resetProgress()}
+          >
+            Reset
+          </button>
+        }
+      >
+        Your stats against winning ranges, the leaks that cost you the most, and how your drills are
+        going.
+      </PageHeader>
 
       <div className="progress-grid">
         <section className="card-panel">
@@ -177,12 +134,12 @@ export function ProgressPage({ onNavigate }: { onNavigate: Navigate }) {
                     <div className="muted small">{streets}</div>
                     {advice && <div className="small">{advice.tip}</div>}
                     {advice?.drill && (
-                      <button
+                      <a
                         className="btn btn-quiet btn-small"
-                        onClick={() => onNavigate('drills', advice.drill!)}
+                        href={href({ page: 'drills', drill: advice.drill })}
                       >
                         Practice this
-                      </button>
+                      </a>
                     )}
                   </li>
                 )
@@ -208,13 +165,15 @@ export function ProgressPage({ onNavigate }: { onNavigate: Navigate }) {
             A correct answer moves a card one box right with a longer wait. A miss sends it back to
             the start. Cards that clear the last box are retired.
           </p>
-          <button
-            className="btn btn-primary"
-            disabled={due.length === 0}
-            onClick={() => onNavigate('drills', 'review')}
-          >
-            Review {due.length > 0 ? due.length : ''} due
-          </button>
+          {due.length > 0 ? (
+            <a className="btn btn-primary" href={href({ page: 'drills', drill: 'review' })}>
+              Review {due.length} due
+            </a>
+          ) : (
+            <button className="btn btn-primary" disabled>
+              Nothing due
+            </button>
+          )}
         </section>
 
         <section className="card-panel">

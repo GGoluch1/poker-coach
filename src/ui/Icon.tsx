@@ -46,6 +46,18 @@ const PATHS = {
     'M21 13v1a4 4 0 0 1-4 4H3',
   ],
   chevronLeft: ['m15 18-6-6 6-6'],
+  chevronRight: ['m9 18 6-6-6-6'],
+  chevronDown: ['m6 9 6 6 6-6'],
+  arrowRight: ['M5 12h14', 'm13 6 6 6-6 6'],
+  menu: ['M4 6h16', 'M4 12h16', 'M4 18h16'],
+  close: ['M18 6 6 18', 'm6 6 12 12'],
+  sun: [
+    'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z',
+    'M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
+  ],
+  moon: ['M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z'],
+  book: ['M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20'],
+  play: ['M7 4v16l13-8Z'],
 } as const
 
 export type IconName = keyof typeof PATHS

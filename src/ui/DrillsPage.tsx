@@ -1,67 +1,19 @@
 import { useEffect, useState } from 'react'
-import type { DrillAnswer, DrillItem, GeneratedKind, Grade } from '../engine/drills'
+import type { DrillAnswer, DrillItem, Grade } from '../engine/drills'
 import { drillKey, gradeDrill, preflopChartOf } from '../engine/drills'
 import { dueCards } from '../engine/srs'
 import { randomSeed, runInWorker } from '../worker/client'
 import { DrillQuestion } from './DrillQuestion'
-import type { IconName } from './Icon'
 import { Icon } from './Icon'
+import { PageHeader } from './PageHeader'
 import { recordDeckAnswer, recordDrill, useProgress } from './progress'
 import { RangeChart } from './RangeChart'
+import { HOME_CRUMB, href } from './routes'
+import type { DrillMode } from './siteMap'
+import { DRILLS, drillInfo } from './siteMap'
 import { useNow } from './useNow'
 
-export type DrillMode = GeneratedKind | 'review'
-
-const DRILLS: { id: DrillMode; title: string; blurb: string; icon: IconName }[] = [
-  {
-    id: 'outs',
-    icon: 'target',
-    title: 'Outs',
-    blurb: 'Count the cards that improve your hand, and see how the rule of 2 and 4 compares.',
-  },
-  {
-    id: 'callfold',
-    icon: 'timer',
-    title: 'Call or fold',
-    blurb: 'Real spots facing a bet. Weigh equity against pot odds before the timer runs out.',
-  },
-  {
-    id: 'preflop',
-    icon: 'grid',
-    title: 'Preflop charts',
-    blurb: 'Open, defend against an open, or face a 3-bet: raise, call or fold by the charts.',
-  },
-  {
-    id: 'texture',
-    icon: 'waves',
-    title: 'Board texture',
-    blurb: 'Classify flops by suits, connectedness and how wet they are.',
-  },
-  {
-    id: 'mdf',
-    icon: 'percent',
-    title: 'Defense and bluff math',
-    blurb: 'Minimum defense frequency, bluff break-even and pot odds for any bet size.',
-  },
-  {
-    id: 'combos',
-    icon: 'cards',
-    title: 'Combos and blockers',
-    blurb: 'Count how many combos of a hand remain once you see the board and your cards.',
-  },
-  {
-    id: 'setmine',
-    icon: 'gem',
-    title: 'Set mining',
-    blurb: 'Is calling with a small pair profitable at this stack depth? Implied odds and SPR.',
-  },
-  {
-    id: 'review',
-    icon: 'repeat',
-    title: 'Review missed spots',
-    blurb: 'Spaced repetition: drills you missed and mistakes from your own hands come back here.',
-  },
-]
+const DRILLS_CRUMB = { label: 'Drills', href: href({ page: 'drills', drill: null }) }
 
 interface Current {
   item: DrillItem
@@ -70,12 +22,12 @@ interface Current {
   fromDeck: boolean
 }
 
-export function DrillsPage({ initialMode }: { initialMode: DrillMode | null }) {
+/** The list of drills, or one drill when `mode` is set. The URL picks it, so it never changes. */
+export function DrillsPage({ mode }: { mode: DrillMode | null }) {
   const progress = useProgress()
-  const [mode, setMode] = useState<DrillMode | null>(initialMode)
   const [current, setCurrent] = useState<Current | null>(null)
   const [grade, setGrade] = useState<Grade | null>(null)
-  const [loading, setLoading] = useState(initialMode !== null)
+  const [loading, setLoading] = useState(mode !== null)
   const [empty, setEmpty] = useState(false)
   const [timed, setTimed] = useState(true)
   const [session, setSession] = useState({ answered: 0, correct: 0 })
@@ -117,17 +69,11 @@ export function DrillsPage({ initialMode }: { initialMode: DrillMode | null }) {
     })
   }
 
-  // Opened from another page with a drill already chosen.
+  // Deal the first question.
   useEffect(() => {
-    if (initialMode) pickItem(initialMode).then(show)
+    if (mode) next(mode)
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  const start = (m: DrillMode) => {
-    setMode(m)
-    setSession({ answered: 0, correct: 0 })
-    next(m)
-  }
 
   const finish = (g: Grade) => {
     if (!current) return
@@ -160,21 +106,20 @@ export function DrillsPage({ initialMode }: { initialMode: DrillMode | null }) {
   if (!mode) {
     return (
       <div className="page">
-        <h2 className="page-title">Drills</h2>
-        <p className="muted">
+        <PageHeader title="Drills" crumbs={[HOME_CRUMB]}>
           Short, focused practice. Every miss goes into a spaced-repetition deck and comes back
           later, a few minutes at first and then days apart.
-        </p>
+        </PageHeader>
         <div className="drill-grid">
           {DRILLS.map((d) => {
             const score = d.id === 'review' ? null : progress.drills[d.id]
             return (
-              <button
+              <a
                 key={d.id}
                 className={`drill-card${d.id === 'review' ? ' drill-card-review' : ''}`}
-                onClick={() => start(d.id)}
+                href={href({ page: 'drills', drill: d.id })}
               >
-                <span className="drill-icon">
+                <span className={`tile hue-${d.hue}`}>
                   <Icon name={d.icon} size={22} />
                 </span>
                 <span className="drill-title">
@@ -196,7 +141,7 @@ export function DrillsPage({ initialMode }: { initialMode: DrillMode | null }) {
                     </span>
                   </span>
                 )}
-              </button>
+              </a>
             )
           })}
         </div>
@@ -204,38 +149,41 @@ export function DrillsPage({ initialMode }: { initialMode: DrillMode | null }) {
     )
   }
 
-  const info = DRILLS.find((d) => d.id === mode)!
+  const info = drillInfo(mode)
   const score = mode === 'review' ? null : progress.drills[mode]
 
   return (
     <div className="page drill-page">
-      <div className="drill-header">
-        <button
-          className="btn btn-quiet btn-icon"
-          onClick={() => setMode(null)}
-          aria-label="All drills"
-          title="All drills"
-        >
-          <Icon name="chevronLeft" />
-        </button>
-        <h2 className="page-title">{info.title}</h2>
-        <span className="pill-stat">
-          {session.correct}/{session.answered}
-          <span className="muted"> this session</span>
-        </span>
-        {score && score.streak > 0 && (
-          <span className="pill-stat">
-            {score.streak}
-            <span className="muted"> streak</span>
-          </span>
-        )}
-        {mode === 'callfold' && (
-          <label className="toggle small">
-            <input type="checkbox" checked={timed} onChange={(e) => setTimed(e.target.checked)} />
-            Timer
-          </label>
-        )}
-      </div>
+      <PageHeader
+        title={info.title}
+        crumbs={[HOME_CRUMB, DRILLS_CRUMB]}
+        actions={
+          <>
+            <span className="pill-stat">
+              {session.correct}/{session.answered}
+              <span className="muted"> this session</span>
+            </span>
+            {score && score.streak > 0 && (
+              <span className="pill-stat">
+                {score.streak}
+                <span className="muted"> streak</span>
+              </span>
+            )}
+            {mode === 'callfold' && (
+              <label className="toggle small">
+                <input
+                  type="checkbox"
+                  checked={timed}
+                  onChange={(e) => setTimed(e.target.checked)}
+                />
+                Timer
+              </label>
+            )}
+          </>
+        }
+      >
+        {info.blurb}
+      </PageHeader>
 
       <div className="drill-body">
         {loadError ? (
@@ -251,6 +199,9 @@ export function DrillsPage({ initialMode }: { initialMode: DrillMode | null }) {
             <p className="muted small">
               Missed drills and mistakes from your hands land here and come back on a schedule.
             </p>
+            <a className="btn" href={DRILLS_CRUMB.href}>
+              Pick a drill
+            </a>
           </div>
         ) : loading || !current ? (
           <p className="muted">Dealing…</p>

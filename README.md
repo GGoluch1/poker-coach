@@ -6,6 +6,8 @@ math runs in a Web Worker.
 
 ## Features
 
+- **Home**: a dashboard with your stats, reviews due, your biggest leak, and links to every drill
+  and tool.
 - **Play**: 2 to 6 players, 1/2 blinds, side pots, and bots with personalities: balanced, nit,
   maniac and calling station. Each bot shows its VPIP/PFR, and reads of its range adjust to its
   style. A live coach shows equity, pot odds, call EV, outs, chart advice and an exploit tip for
@@ -26,6 +28,8 @@ math runs in a Web Worker.
 - **Progress**: VPIP, PFR, 3-bet, fold to c-bet and showdown stats against target ranges; a leak
   tracker that groups your mistakes by type and estimates the big blinds each leak cost; and drill
   accuracy.
+- **Preflop charts**: every opening, defending and 3-bet chart the coach uses, with notes on how
+  to read them.
 - **River solver**: CFR+ on a river spot with two ranges and chosen bet sizes. It shows each
   player's strategy by hand and how exploitable the result is. The game is deliberately small:
   check or bet, then call or fold, with no raises.
@@ -36,7 +40,8 @@ too. Checks and calls assume no more betting, and bets and raises assume the opp
 the minimum defense frequency, adjusted for their personality. Preflop advice comes from
 approximate 6-max charts.
 
-Progress and the current game are saved in your browser.
+Progress, the current game and the light or dark theme are saved in your browser. Every page has
+its own URL (for example `#/drills/outs`), so the back button, bookmarks and links work.
 
 ## Development
 
@@ -66,6 +71,10 @@ npm run lint
 - `src/worker/`: the Web Worker and a promise-based client. Jobs run inline where workers aren't
   available.
 - `src/ui/`: React pages and components.
+  - `routes`, `siteMap`: hash routes and the drills and study tools shown in menus and on the
+    home page
+  - `SiteHeader`, `SiteFooter`, `PageHeader`, `theme`: the site shell, dropdown and mobile menus,
+    breadcrumbs, and the theme switch
 
 ## Deploying
 

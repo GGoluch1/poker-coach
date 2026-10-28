@@ -6,7 +6,9 @@ import { handClass } from '../engine/range'
 import type { ImportResult } from '../worker/handlers'
 import { runInWorker } from '../worker/client'
 import { HandReview } from './HandReview'
+import { PageHeader } from './PageHeader'
 import { recordHand } from './progress'
+import { HOME_CRUMB } from './routes'
 import { Table } from './Table'
 import type { HandRecord } from './useGame'
 import { HERO, reviewRecord } from './useGame'
@@ -123,12 +125,11 @@ export function HandsPage() {
 
   return (
     <div className="page">
-      <h2 className="page-title">Your hands</h2>
-      <p className="muted">
+      <PageHeader title="Hand histories" crumbs={[HOME_CRUMB, { label: 'Study' }]}>
         Paste hand histories from PokerStars or GGPoker to replay them and get the same review as
         hands played here. Mistakes go into your review deck, and the hands count toward your stats
         and leaks.
-      </p>
+      </PageHeader>
 
       <div className="hands-layout">
         <section className="card-panel import-panel">
