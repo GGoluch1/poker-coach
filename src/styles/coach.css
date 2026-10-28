@@ -1,0 +1,236 @@
+/* Coach */
+.coach {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.coach-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.coach-hand {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.coach .stat {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.stat-row {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 14px;
+}
+.coach .stat-row strong {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+.meter {
+  position: relative;
+  display: block;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-3);
+}
+.meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--good);
+  transition: width 0.4s ease;
+}
+.meter-mark {
+  position: absolute;
+  top: -4px;
+  width: 3px;
+  height: 16px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: var(--text);
+  box-shadow: 0 0 0 2px var(--surface-2);
+}
+.advice {
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+.advice-good {
+  background: var(--good-bg);
+  color: var(--good);
+}
+.advice-bad {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+.advice .tag {
+  background: color-mix(in srgb, currentColor 16%, transparent);
+  color: inherit;
+}
+.outs {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  margin: 4px 0 0;
+  font-size: 13px;
+  list-style: none;
+}
+.outs li {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-top: 1px solid var(--border-strong);
+}
+.outs-cards {
+  text-align: right;
+}
+.reads,
+.log {
+  margin-top: 4px;
+}
+.reads summary,
+.log summary {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.reads summary:hover,
+.log summary:hover {
+  color: var(--text);
+}
+.reads ul,
+.log ul {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 18px;
+  margin: 8px 0;
+  font-size: 13px;
+}
+
+/* Review */
+.review {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 6px 0 4px;
+}
+.review-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+}
+.decisions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.decision {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  box-shadow: inset 3px 0 0 var(--ok);
+}
+.decision-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 650;
+}
+.verdict {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--ok-bg);
+  color: var(--ok);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.verdict-good {
+  box-shadow: inset 3px 0 0 var(--good);
+}
+.verdict-good .verdict {
+  background: var(--good-bg);
+  color: var(--good);
+}
+.verdict-mistake {
+  box-shadow: inset 3px 0 0 var(--warn);
+}
+.verdict-mistake .verdict {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+.verdict-blunder {
+  box-shadow: inset 3px 0 0 var(--bad);
+}
+.verdict-blunder .verdict {
+  background: var(--bad-bg);
+  color: var(--bad);
+}
+.ev-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.ev-row > span {
+  padding: 1px 7px;
+  border-radius: 6px;
+  background: var(--bg);
+}
+.ev-row > .ev-chosen {
+  background: var(--surface-3);
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* History */
+.history-list {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.history-list li + li {
+  border-top: 1px solid var(--border);
+}
+.history-row {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  align-items: center;
+  width: 100%;
+  padding: 10px 8px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+  cursor: pointer;
+}
+.history-row:hover {
+  background: var(--surface-2);
+}
+.history-list li.open .history-row {
+  font-weight: 700;
+}

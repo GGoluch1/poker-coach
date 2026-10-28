@@ -26,7 +26,9 @@ export function PageHeader({ title, crumbs, actions, compact, children }: Props)
       )}
       <div className="page-header-row">
         <div className="page-header-text">
-          <h1 className="page-title">{title}</h1>
+          <h1 className="page-title" tabIndex={-1}>
+            {title}
+          </h1>
           {children && <div className="page-lede">{children}</div>}
         </div>
         {actions && <div className="page-actions">{actions}</div>}

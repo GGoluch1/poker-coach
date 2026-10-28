@@ -26,8 +26,9 @@ math runs in a Web Worker.
 - **Spaced repetition**: missed drills and mistakes from your own hands come back on a Leitner
   schedule, a few minutes at first and then days apart.
 - **Progress**: VPIP, PFR, 3-bet, fold to c-bet and showdown stats against target ranges; a leak
-  tracker that groups your mistakes by type and estimates the big blinds each leak cost; and drill
-  accuracy.
+  tracker that groups your mistakes by type and estimates the big blinds each leak cost; drill
+  accuracy; a daily streak with charts of practice per day and results over time; and a backup
+  you can export and import.
 - **Preflop charts**: every opening, defending and 3-bet chart the coach uses, with notes on how
   to read them.
 - **River solver**: CFR+ on a river spot with two ranges and chosen bet sizes. It shows each
@@ -41,7 +42,9 @@ the minimum defense frequency, adjusted for their personality. Preflop advice co
 approximate 6-max charts.
 
 Progress, the current game and the light or dark theme are saved in your browser. Every page has
-its own URL (for example `#/drills/outs`), so the back button, bookmarks and links work.
+its own URL (for example `/drills/outs`), so the back button, bookmarks and links work. The first
+visit to Play starts a short tour of the table. After one visit the app also works offline and can
+be installed as an app.
 
 ## Development
 
@@ -49,9 +52,12 @@ its own URL (for example `#/drills/outs`), so the back button, bookmarks and lin
 npm install
 npm run dev      # local dev server
 npm test         # unit tests (Vitest)
+npm run test:e2e # browser tests (Playwright) against the production build, desktop and phone
 npm run build    # type-check and production build
 npm run lint
 ```
+
+The browser tests need Playwright's Chromium once: `npx playwright install chromium`.
 
 ## Layout
 
@@ -68,15 +74,23 @@ npm run lint
   - `handHistory`: PokerStars and GGPoker import, replayed through the engine
   - `drills`, `srs`, `stats`: drill generation and grading, spaced repetition, and player stats
   - `solver`: the CFR+ river solver
+  - `activity`: practice per day and streaks
 - `src/worker/`: the Web Worker and a promise-based client. Jobs run inline where workers aren't
   available.
 - `src/ui/`: React pages and components.
-  - `routes`, `siteMap`: hash routes and the drills and study tools shown in menus and on the
-    home page
+  - `routes`, `siteMap`: URL routes and the drills and study tools shown in menus and on the home
+    page
   - `SiteHeader`, `SiteFooter`, `PageHeader`, `theme`: the site shell, dropdown and mobile menus,
     breadcrumbs, and the theme switch
+  - `Tour`, `tourSteps`, `backup`, `ActivityCharts`: the Play tour, progress backups, and the
+    progress charts
+- `src/styles/`: the stylesheets by area, imported in order from `App.css`.
+- `src/serviceWorker.ts`, `public/sw.js`, `public/manifest.webmanifest`: offline support and app
+  install.
+- `e2e/`: Playwright browser tests.
 
 ## Deploying
 
 Vercel builds the site from the `master` branch on every push (`npm run build`, output folder
-`dist`).
+`dist`). `vercel.json` serves `index.html` for every path, so links like `/drills/outs` load
+directly.

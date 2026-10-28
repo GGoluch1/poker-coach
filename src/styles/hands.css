@@ -1,0 +1,33 @@
+/* Imported hands */
+.import-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.import-panel p {
+  margin: 0;
+}
+.import-row {
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+}
+.replay .table-wrap {
+  margin: 0 -12px;
+}
+.replay .felt {
+  margin-inline: 40px;
+}
+.replay-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.replay-caption {
+  flex: 1;
+  min-width: 0;
+  color: var(--muted);
+  text-align: center;
+}
+.replay-heading {
+  margin: 24px 0 6px;
+}

@@ -58,6 +58,12 @@ const PATHS = {
   moon: ['M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z'],
   book: ['M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20'],
   play: ['M7 4v16l13-8Z'],
+  help: [
+    'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z',
+    'M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3',
+    'M12 17h.01',
+  ],
+  sliders: ['M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3', 'M14 2v4M8 10v4M16 18v4'],
 } as const
 
 export type IconName = keyof typeof PATHS

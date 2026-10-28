@@ -1,3 +1,4 @@
+import { dayKey, streak } from '../engine/activity'
 import { parseCards } from '../engine/card'
 import { dueCards } from '../engine/srs'
 import { CardView } from './CardView'
@@ -15,7 +16,10 @@ const pct = (x: number) => `${Math.round(x * 100)}%`
 export function HomePage() {
   const progress = useProgress()
   const { stats } = progress
-  const due = dueCards(progress.deck, useNow()).length
+  const now = useNow()
+  const due = dueCards(progress.deck, now).length
+  const dayStreak = streak(progress.days, now)
+  const practicedToday = progress.days.at(-1)?.day === dayKey(now)
   const scores = Object.values(progress.drills)
   const attempts = scores.reduce((n, s) => n + s.attempts, 0)
   const correct = scores.reduce((n, s) => n + s.correct, 0)
@@ -32,14 +36,14 @@ export function HomePage() {
       <section className="hero">
         <div className="hero-text">
           <p className="eyebrow">No-limit hold’em trainer</p>
-          <h1 className="hero-title">
+          <h1 className="hero-title" tabIndex={-1}>
             {isNew ? (
               <>
-                Learn poker by playing, <span className="accent">with a coach at your side.</span>
+                Learn poker by playing, <span className="accent">with a coach at your side</span>
               </>
             ) : (
               <>
-                Welcome back. <span className="accent">Ready for a session?</span>
+                Welcome back, <span className="accent">ready for a session?</span>
               </>
             )}
           </h1>
@@ -108,6 +112,17 @@ export function HomePage() {
             </a>
           </div>
           <div className="stat-tiles">
+            <div className="stat-tile">
+              <span className="stat-label">Day streak</span>
+              <strong>{dayStreak}</strong>
+              <span className="muted small">
+                {practicedToday
+                  ? 'You practiced today'
+                  : dayStreak > 0
+                    ? 'Practice today to keep it going'
+                    : 'Practice today to start one'}
+              </span>
+            </div>
             <div className="stat-tile">
               <span className="stat-label">Hands played</span>
               <strong>{stats.hands}</strong>

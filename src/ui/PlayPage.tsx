@@ -1,13 +1,16 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { findPreflopChart } from '../engine/charts'
 import { PERSONALITIES, PROFILES } from '../engine/profiles'
 import { handClass, positions } from '../engine/range'
 import { ActionBar } from './ActionBar'
 import { CoachPanel } from './CoachPanel'
 import { HistoryPanel } from './HistoryPanel'
+import { Icon } from './Icon'
 import { PageHeader } from './PageHeader'
 import { RangeChart } from './RangeChart'
 import { Table } from './Table'
+import { Tour } from './Tour'
+import { hasSeenTour, PLAY_TOUR } from './tourSteps'
 import type { Lineup } from './useGame'
 import { HERO, sessionOver, useGame } from './useGame'
 
@@ -24,6 +27,24 @@ export function PlayPage() {
   const [hints, setHints] = useState(true)
   const [opponents, setOpponents] = useState(game.players.length - 1)
   const [lineup, setLineup] = useState<Lineup>('mixed')
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [touring, setTouring] = useState(() => !hasSeenTour())
+  const settingsRef = useRef<HTMLDivElement>(null)
+
+  // On phones the table settings are a popover: close it on an outside click or Escape.
+  useEffect(() => {
+    if (!settingsOpen) return
+    const onDown = (e: PointerEvent) => {
+      if (!settingsRef.current?.contains(e.target as Node)) setSettingsOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setSettingsOpen(false)
+    document.addEventListener('pointerdown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [settingsOpen])
 
   const hero = game.players[HERO]
   const heroTurn = !game.handOver && game.toAct === HERO
@@ -60,35 +81,55 @@ export function PlayPage() {
         title="Play"
         compact
         actions={
-          <div className="toolbar">
-            <label className="toggle">
-              <input type="checkbox" checked={hints} onChange={(e) => setHints(e.target.checked)} />
-              Live hints
-            </label>
-            <label>
-              <span className="sr-only">Opponents</span>
-              <select value={opponents} onChange={(e) => setOpponents(Number(e.target.value))}>
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <option key={n} value={n}>
-                    {n} opponent{n === 1 ? '' : 's'}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <span className="sr-only">Opponent types</span>
-              <select value={lineup} onChange={(e) => setLineup(e.target.value as Lineup)}>
-                <option value="mixed">Mixed opponents</option>
-                {PERSONALITIES.map((p) => (
-                  <option key={p} value={p}>
-                    All {PROFILES[p].plural}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button className="btn btn-small" onClick={startNew}>
-              New game
+          <div className="table-settings" ref={settingsRef}>
+            <button
+              className="btn btn-small table-settings-toggle"
+              aria-expanded={settingsOpen}
+              aria-controls="table-settings"
+              onClick={() => setSettingsOpen(!settingsOpen)}
+            >
+              <Icon name="sliders" size={16} /> Table
             </button>
+            <div id="table-settings" className={`toolbar${settingsOpen ? ' toolbar-open' : ''}`}>
+              <label className="toggle">
+                <input
+                  type="checkbox"
+                  checked={hints}
+                  onChange={(e) => setHints(e.target.checked)}
+                />
+                Live hints
+              </label>
+              <label>
+                <span className="sr-only">Opponents</span>
+                <select value={opponents} onChange={(e) => setOpponents(Number(e.target.value))}>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <option key={n} value={n}>
+                      {n} opponent{n === 1 ? '' : 's'}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span className="sr-only">Opponent types</span>
+                <select value={lineup} onChange={(e) => setLineup(e.target.value as Lineup)}>
+                  <option value="mixed">Mixed opponents</option>
+                  {PERSONALITIES.map((p) => (
+                    <option key={p} value={p}>
+                      All {PROFILES[p].plural}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                className="btn btn-small"
+                onClick={() => {
+                  setSettingsOpen(false)
+                  startNew()
+                }}
+              >
+                New game
+              </button>
+            </div>
           </div>
         }
       >
@@ -97,6 +138,9 @@ export function PlayPage() {
             NLH {game.smallBlind}/{game.bigBlind}
           </span>
           <span className="muted small">Hand #{game.handNumber}</span>
+          <button className="btn btn-quiet btn-small" onClick={() => setTouring(true)}>
+            <Icon name="help" size={16} /> How it works
+          </button>
         </span>
       </PageHeader>
 
@@ -162,6 +206,8 @@ export function PlayPage() {
           </div>
         </aside>
       </div>
+
+      {touring && <Tour steps={PLAY_TOUR} onClose={() => setTouring(false)} />}
     </>
   )
 }

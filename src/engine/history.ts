@@ -1,4 +1,4 @@
-import { cardToString } from './card'
+import { cardLabel } from './card'
 import type { GameState, HandEvent } from './game'
 import { describeHand } from './hand'
 
@@ -13,7 +13,7 @@ export function describeEvents(s: GameState): string[] {
       case 'blind':
         return `${name(e.seat)} posts ${blinds++ === 0 ? 'small' : 'big'} blind ${e.amount}`
       case 'deal':
-        return `${STREET_LABEL[e.street]}: ${e.cards.map(cardToString).join(' ')}`
+        return `${STREET_LABEL[e.street]}: ${e.cards.map(cardLabel).join(' ')}`
       case 'action': {
         const allIn = e.allIn ? ' (all in)' : ''
         switch (e.action) {

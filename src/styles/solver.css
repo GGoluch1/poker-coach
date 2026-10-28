@@ -1,0 +1,114 @@
+/* Solver */
+.solver-layout,
+.hands-layout {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .solver-layout,
+  .hands-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.solver-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 650;
+}
+.field > span:first-child {
+  color: var(--muted);
+}
+.field textarea {
+  font: 13px/1.5 var(--mono);
+  resize: vertical;
+}
+.field-row {
+  display: flex;
+  gap: 6px;
+}
+.field-row input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--mono);
+}
+.field-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.form-error {
+  margin: 0;
+  color: var(--bad);
+  font-size: 13px;
+}
+.solver-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.solver-summary div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+.solver-summary strong {
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.node-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.node-title {
+  margin: 0 0 8px;
+}
+.action-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+.legend-item {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+}
+.cell-bars {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+.cell-label {
+  position: relative;
+  color: rgba(5, 10, 15, 0.82);
+}
+.strategy-grid .cell-fold {
+  background: var(--surface-2);
+}
+.strategy-grid .cell-fold .cell-label {
+  color: var(--faint);
+}
+@media (min-width: 700px) {
+  .strategy-grid .cell {
+    font-size: 11px;
+  }
+}

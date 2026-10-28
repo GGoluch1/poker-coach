@@ -1,6 +1,11 @@
+import type { ChangeEvent } from 'react'
+import { useRef, useState } from 'react'
+import { recentDays, streak } from '../engine/activity'
 import type { DrillKind } from '../engine/drills'
 import { BOX_INTERVALS, dueCards } from '../engine/srs'
 import { statLines } from '../engine/stats'
+import { DailyActivityChart, ResultsChart } from './ActivityCharts'
+import { exportBackup, readBackup, restoreBackup } from './backup'
 import { PageHeader } from './PageHeader'
 import { resetProgress, useProgress } from './progress'
 import { HOME_CRUMB, href } from './routes'
@@ -30,7 +35,30 @@ export function ProgressPage() {
   const { stats } = progress
   const lines = statLines(stats)
   const leaks = Object.entries(progress.leaks).sort((a, b) => b[1].count - a[1].count)
-  const due = dueCards(progress.deck, useNow())
+  const now = useNow()
+  const due = dueCards(progress.deck, now)
+  const recent = recentDays(progress.days, now, 30)
+  const daysWithHands = progress.days.filter((d) => d.hands > 0).length
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [backupError, setBackupError] = useState<string | null>(null)
+
+  const onImport = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setBackupError(null)
+    try {
+      const backup = await readBackup(file)
+      if (!confirm('Replace your progress, current game and imported hands with this backup?')) {
+        return
+      }
+      restoreBackup(backup)
+      // Everything reads storage at startup, so reload to pick up the restored data.
+      location.reload()
+    } catch (err) {
+      setBackupError((err as Error).message)
+    }
+  }
   const boxes = BOX_INTERVALS.map((_, i) => progress.deck.filter((c) => c.box === i).length)
 
   return (
@@ -52,6 +80,33 @@ export function ProgressPage() {
       </PageHeader>
 
       <div className="progress-grid">
+        <section className="card-panel progress-wide">
+          <h3>Activity</h3>
+          <div className="activity-head">
+            <div>
+              <strong>{streak(progress.days, now)}</strong>
+              <span className="muted small">day streak</span>
+            </div>
+            <div>
+              <strong>{recent.filter((d) => d.hands + d.answers > 0).length}</strong>
+              <span className="muted small">days practiced in the last 30</span>
+            </div>
+          </div>
+          <div className="activity-charts">
+            <div>
+              <p className="chart-title">Practice per day, last 30 days</p>
+              <DailyActivityChart days={recent} />
+            </div>
+            <div>
+              <p className="chart-title">Results over time, in big blinds</p>
+              {daysWithHands >= 2 ? (
+                <ResultsChart days={progress.days} />
+              ) : (
+                <p className="muted small">Play hands on two or more days to see a trend.</p>
+              )}
+            </div>
+          </div>
+        </section>
         <section className="card-panel">
           <h3>Your play</h3>
           {stats.hands === 0 ? (
@@ -203,6 +258,24 @@ export function ProgressPage() {
               ))}
             </ul>
           )}
+        </section>
+
+        <section className="card-panel">
+          <h3>Backup</h3>
+          <p className="muted small">
+            Your progress is saved only in this browser. Export a backup to keep it safe or move it
+            to another device.
+          </p>
+          <div className="backup-actions">
+            <button className="btn" onClick={exportBackup}>
+              Export backup
+            </button>
+            <button className="btn btn-quiet" onClick={() => fileRef.current?.click()}>
+              Import backup
+            </button>
+            <input ref={fileRef} type="file" accept=".json,application/json" onChange={onImport} />
+          </div>
+          {backupError && <p className="form-error">{backupError}</p>}
         </section>
       </div>
     </div>

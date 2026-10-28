@@ -5,6 +5,7 @@ import { describeEvents, netResult } from '../engine/history'
 import { handClass } from '../engine/range'
 import type { ImportResult } from '../worker/handlers'
 import { runInWorker } from '../worker/client'
+import { SuitText } from './CardView'
 import { HandReview } from './HandReview'
 import { PageHeader } from './PageHeader'
 import { recordHand } from './progress'
@@ -272,7 +273,7 @@ function ImportedHandView({ hand, onRemove }: { hand: ImportedHand; onRemove: ()
           ◀
         </button>
         <span className="replay-caption small">
-          {step === 0 ? 'Cards dealt, blinds posted' : lines.at(-1)}
+          {step === 0 ? 'Cards dealt, blinds posted' : <SuitText text={lines.at(-1)!} />}
         </span>
         <button
           className="btn btn-icon"

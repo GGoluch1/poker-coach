@@ -1,0 +1,91 @@
+/* Pages */
+.page {
+  max-width: 1120px;
+}
+.page-header {
+  margin-bottom: 28px;
+}
+.page-header-compact {
+  margin-bottom: 8px;
+}
+.crumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0;
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  list-style: none;
+}
+.crumbs li + li::before {
+  content: '/';
+  margin-right: 6px;
+  color: var(--faint);
+}
+.crumbs a:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+.page-header-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+.page-header-text {
+  min-width: 0;
+  max-width: 72ch;
+}
+.page-title {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.page-header-compact .page-header-row {
+  align-items: center;
+}
+.page-header-compact .page-header-text {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+}
+.page-header-compact .page-title {
+  font-size: 26px;
+}
+.page-lede {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 15.5px;
+}
+.page-header-compact .page-lede {
+  margin: 0;
+}
+.page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.page-head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+@media (max-width: 600px) {
+  .page-title {
+    font-size: 28px;
+  }
+}
+.card-panel {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}

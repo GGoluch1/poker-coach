@@ -1,0 +1,85 @@
+/* Range charts */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(13, 1fr);
+  gap: 2px;
+  margin-bottom: 10px;
+}
+.cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+.cell-raise {
+  background: var(--raise);
+  color: var(--raise-text);
+}
+.cell-call {
+  background: var(--call);
+  color: var(--call-text);
+}
+.cell-fold {
+  background: var(--surface-3);
+  color: var(--faint);
+}
+.cell-current {
+  z-index: 1;
+  outline: 2px solid var(--text);
+  outline-offset: -2px;
+}
+.chart-select {
+  width: 100%;
+  margin-bottom: 8px;
+}
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+.swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  vertical-align: -1px;
+}
+
+/* Preflop charts page */
+.charts-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 560px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .charts-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.charts-layout .cell {
+  font-size: clamp(8px, 1.6vw, 11px);
+}
+.prose h2 {
+  margin: 0 0 8px;
+  font-size: 17px;
+}
+.prose p,
+.prose dl {
+  margin: 0 0 20px;
+  color: var(--muted);
+  font-size: 14.5px;
+}
+.prose dt {
+  color: var(--text);
+  font-weight: 700;
+}
+.prose dd {
+  margin: 0 0 8px;
+}

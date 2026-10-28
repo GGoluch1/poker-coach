@@ -6,7 +6,7 @@ import type { DrillAnswer, DrillItem } from '../engine/drills'
 import { preflopChartOf } from '../engine/drills'
 import type { HandClass } from '../engine/range'
 import type { Connectedness, SuitTexture, Wetness } from '../engine/texture'
-import { CardView } from './CardView'
+import { CardView, SuitText } from './CardView'
 
 const CALL_FOLD_SECONDS = 20
 
@@ -53,7 +53,9 @@ function Situation({ lines }: { lines: string[] }) {
   return (
     <ul className="situation">
       {lines.map((l, i) => (
-        <li key={i}>{l}</li>
+        <li key={i}>
+          <SuitText text={l} />
+        </li>
       ))}
     </ul>
   )

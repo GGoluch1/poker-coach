@@ -12,7 +12,11 @@ function current(): Theme {
 }
 
 export function setTheme(theme: Theme) {
-  document.documentElement.dataset.theme = theme
+  const root = document.documentElement
+  // Swap colors instantly; otherwise every button fades between themes on its own timer.
+  root.classList.add('theme-switching')
+  root.dataset.theme = theme
+  requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove('theme-switching')))
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', THEME_COLORS[theme])
   try {
     localStorage.setItem(STORAGE_KEY, theme)

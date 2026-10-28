@@ -3,8 +3,9 @@ import type { DrillMode } from './siteMap'
 import { drillInfo, isDrillMode } from './siteMap'
 
 /**
- * Pages live in the URL hash (#/drills/outs), so links, the back button and bookmarks work on any
- * static host without server rewrites.
+ * Pages live in the URL path (/drills/outs). The host serves index.html for every path
+ * (vercel.json, and Vite's dev server), and same-origin link clicks change the page without a
+ * reload.
  */
 export type Route =
   | { page: 'home' }
@@ -22,15 +23,15 @@ export interface Crumb {
   href?: string
 }
 
-export const HOME_CRUMB: Crumb = { label: 'Home', href: '#/' }
+export const HOME_CRUMB: Crumb = { label: 'Home', href: '/' }
 
 /** Top-level menu sections. */
 export type Section = 'play' | 'drills' | 'study' | 'progress'
 
 const SINGLE = ['play', 'hands', 'charts', 'solver', 'progress'] as const
 
-export function parseRoute(hash: string): Route {
-  const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean)
+export function parseRoute(path: string): Route {
+  const parts = path.split('/').filter(Boolean)
   if (parts.length === 0) return { page: 'home' }
   const [first, second] = parts
   if (first === 'drills' && parts.length <= 2) {
@@ -48,11 +49,11 @@ export function href(route: Route): string {
   switch (route.page) {
     case 'home':
     case 'notFound':
-      return '#/'
+      return '/'
     case 'drills':
-      return route.drill ? `#/drills/${route.drill}` : '#/drills'
+      return route.drill ? `/drills/${route.drill}` : '/drills'
     default:
-      return `#/${route.page}`
+      return `/${route.page}`
   }
 }
 
@@ -96,12 +97,46 @@ export function documentTitle(route: Route): string {
   return `${name} · Poker Coach`
 }
 
-function subscribe(onChange: () => void) {
-  window.addEventListener('hashchange', onChange)
-  return () => window.removeEventListener('hashchange', onChange)
+const listeners = new Set<() => void>()
+const notify = () => listeners.forEach((l) => l())
+
+export function navigate(path: string) {
+  if (path !== window.location.pathname) {
+    history.pushState(null, '', path)
+    notify()
+  }
+  window.scrollTo(0, 0)
+}
+
+/** Call once at startup: follows links in place and handles the back button. */
+export function startRouter() {
+  // Links from before paths were used look like /#/drills/outs.
+  if (window.location.hash.startsWith('#/')) {
+    history.replaceState(null, '', window.location.hash.slice(1))
+  }
+  window.addEventListener('popstate', notify)
+  document.addEventListener('click', (e) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+      return
+    }
+    const a = (e.target as Element).closest?.('a')
+    if (!a || a.target || a.hasAttribute('download')) return
+    const url = new URL(a.href, window.location.href)
+    if (url.origin !== window.location.origin) return
+    // Let in-page anchors like #main jump as usual.
+    if (url.pathname === window.location.pathname && url.hash) return
+    e.preventDefault()
+    navigate(url.pathname)
+  })
 }
 
 export function useRoute(): Route {
-  const hash = useSyncExternalStore(subscribe, () => window.location.hash)
-  return useMemo(() => parseRoute(hash), [hash])
+  const path = useSyncExternalStore(
+    (l) => {
+      listeners.add(l)
+      return () => listeners.delete(l)
+    },
+    () => window.location.pathname,
+  )
+  return useMemo(() => parseRoute(path), [path])
 }

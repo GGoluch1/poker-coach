@@ -1,0 +1,18 @@
+/* Utilities */
+.muted {
+  color: var(--muted);
+}
+.small {
+  font-size: 13px;
+}
+.pos {
+  color: var(--good);
+  font-weight: 700;
+}
+.neg {
+  color: var(--bad);
+  font-weight: 700;
+}
+.icon {
+  flex-shrink: 0;
+}

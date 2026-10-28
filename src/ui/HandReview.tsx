@@ -1,6 +1,6 @@
 import type { Action } from '../engine/game'
 import { describeEvents, netResult } from '../engine/history'
-import { CardText } from './CardView'
+import { CardText, SuitText } from './CardView'
 import { useAsync } from './useAsync'
 import type { HandRecord } from './useGame'
 import { HERO, reviewRecord } from './useGame'
@@ -94,7 +94,9 @@ export function HandReview({ record, showLog }: { record: HandRecord; showLog?: 
           <summary>Hand log</summary>
           <ul>
             {describeEvents(final).map((line, i) => (
-              <li key={i}>{line}</li>
+              <li key={i}>
+                <SuitText text={line} />
+              </li>
             ))}
           </ul>
           {final.showdown && (

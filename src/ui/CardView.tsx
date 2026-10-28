@@ -31,6 +31,27 @@ export function CardView({ card, size = 'md', hidden, dim }: Props) {
   )
 }
 
+const SUIT_OF_SYMBOL: Record<string, Card['suit']> = { '♠': 's', '♥': 'h', '♦': 'd', '♣': 'c' }
+
+/** Text with cards written like "K♠" shown as colored card chips. */
+export function SuitText({ text }: { text: string }) {
+  // Splitting on a capture group puts the cards at the odd indexes.
+  const parts = text.split(/([2-9TJQKA][♠♥♦♣])/)
+  return (
+    <>
+      {parts.map((p, i) =>
+        i % 2 === 1 ? (
+          <span key={i} className={`card-text suit-${SUIT_OF_SYMBOL[p[1]]}`}>
+            {p}
+          </span>
+        ) : (
+          p
+        ),
+      )}
+    </>
+  )
+}
+
 export function CardText({ card }: { card: Card }) {
   const s = cardToString(card)
   return (

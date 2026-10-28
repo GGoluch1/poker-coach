@@ -1,4 +1,6 @@
 import { useSyncExternalStore } from 'react'
+import type { DayLog } from '../engine/activity'
+import { logDay } from '../engine/activity'
 import type { DrillItem, DrillKind } from '../engine/drills'
 import type { Street } from '../engine/game'
 import type { SrsCard } from '../engine/srs'
@@ -30,6 +32,8 @@ export interface Progress {
   leaks: Record<string, Leak>
   drills: Partial<Record<DrillKind, DrillScore>>
   deck: SrsCard<DrillItem>[]
+  /** Practice per day, oldest first. */
+  days: DayLog[]
   /** Ids of hands already counted, newest last. */
   processed: string[]
 }
@@ -39,6 +43,7 @@ const empty = (): Progress => ({
   leaks: {},
   drills: {},
   deck: [],
+  days: [],
   processed: [],
 })
 
@@ -101,6 +106,7 @@ export function recordHand(id: string, result: HandReviewResult, now = Date.now(
       stats: addStats(p.stats, result.stats),
       leaks,
       deck,
+      days: logDay(p.days, now, { hands: result.stats.hands, bigBlinds: result.stats.bigBlinds }),
       processed: [...p.processed, id].slice(-200),
     }
   })
@@ -121,6 +127,7 @@ export function recordDrill(kind: DrillKind, correct: boolean) {
           bestStreak: Math.max(prev.bestStreak, streak),
         },
       },
+      days: logDay(p.days, Date.now(), { answers: 1, correct: correct ? 1 : 0 }),
     }
   })
 }

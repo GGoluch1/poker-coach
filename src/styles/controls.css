@@ -1,0 +1,327 @@
+/* Buttons */
+.btn {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    filter 0.15s,
+    transform 0.08s;
+}
+.btn:hover {
+  background: var(--surface-3);
+}
+.btn:active {
+  transform: scale(0.97);
+}
+.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  transform: none;
+}
+.btn-primary {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--accent-text);
+}
+.btn-primary:hover {
+  background: color-mix(in srgb, var(--accent) 88%, white);
+}
+.btn-large {
+  padding: 13px 24px;
+  font-size: 15.5px;
+}
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.btn-quiet {
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+.btn-quiet:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.btn-small {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+.btn-icon {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+}
+.btn-fold,
+.btn-call,
+.btn-raise {
+  border-color: transparent;
+}
+.btn-fold {
+  background: var(--fold);
+  color: var(--fold-text);
+}
+.btn-fold:hover {
+  background: color-mix(in srgb, var(--fold) 85%, white);
+}
+.btn-call {
+  background: var(--call);
+  color: var(--call-text);
+}
+.btn-raise {
+  background: var(--raise);
+  color: var(--raise-text);
+}
+.btn-call:hover,
+.btn-raise:hover {
+  filter: brightness(1.08);
+}
+.btn-call:hover {
+  background: var(--call);
+}
+.btn-raise:hover {
+  background: var(--raise);
+}
+kbd {
+  padding: 1px 5px;
+  margin-left: 4px;
+  border: 1px solid currentColor;
+  border-radius: 5px;
+  font: 600 10px var(--mono);
+  opacity: 0.55;
+}
+@media (hover: none) {
+  kbd {
+    display: none;
+  }
+}
+
+/* Form controls */
+.toolbar select,
+.field select,
+.chart-select {
+  appearance: none;
+  padding: 8px 34px 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a93a3' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 11px center / 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.toolbar select:hover,
+.chart-select:hover {
+  border-color: var(--border-strong);
+}
+.field input,
+.field textarea,
+.amount {
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+}
+.field input:focus,
+.field textarea:focus,
+.field select:focus,
+.amount:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.amount {
+  width: 92px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.toggle {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+.toggle input {
+  position: relative;
+  flex-shrink: 0;
+  width: 36px;
+  height: 20px;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--surface-3);
+  appearance: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.toggle input::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s;
+}
+.toggle input:checked {
+  background: var(--accent);
+}
+.toggle input:checked::before {
+  transform: translateX(16px);
+}
+input[type='range'] {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  appearance: none;
+  cursor: pointer;
+}
+input[type='range']::-webkit-slider-thumb {
+  width: 22px;
+  height: 22px;
+  border: 5px solid var(--raise);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  appearance: none;
+}
+input[type='range']::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 5px solid var(--raise);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+.chip-btn {
+  padding: 6px 13px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
+}
+.chip-btn:hover {
+  border-color: var(--faint);
+  color: var(--text);
+}
+.chip-btn-on,
+.chip-btn-on:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.tag {
+  display: inline-block;
+  padding: 2px 7px;
+  margin-right: 6px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+}
+.tag-right {
+  margin: 0 0 0 auto;
+}
+.pill-stat {
+  display: inline-block;
+  padding: 4px 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Badges */
+.badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: 6px;
+  border-radius: 999px;
+  background: var(--due);
+  color: var(--due-text);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* Colored icon tiles for drills and tools. */
+.tile {
+  --hue: var(--hue-red);
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--hue) 14%, transparent);
+  color: var(--hue);
+}
+.tile-sm {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
+.tile-xs {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+.hue-red {
+  --hue: var(--hue-red);
+}
+.hue-amber {
+  --hue: var(--hue-amber);
+}
+.hue-green {
+  --hue: var(--hue-green);
+}
+.hue-teal {
+  --hue: var(--hue-teal);
+}
+.hue-blue {
+  --hue: var(--hue-blue);
+}
+.hue-violet {
+  --hue: var(--hue-violet);
+}
+.hue-pink {
+  --hue: var(--hue-pink);
+}

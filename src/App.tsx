@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { dueCards } from './engine/srs'
 import { ChartsPage } from './ui/ChartsPage'
 import { DrillsPage } from './ui/DrillsPage'
@@ -20,18 +20,21 @@ export default function App() {
   const progress = useProgress()
   const due = dueCards(progress.deck, useNow()).length
 
-  // A new page starts at the top, like any website.
+  const lastRoute = useRef(route)
   useEffect(() => {
     document.title = documentTitle(route)
-    window.scrollTo(0, 0)
+    // After moving to another page, focus its heading so screen readers announce it.
+    if (lastRoute.current !== route) {
+      lastRoute.current = route
+      document.querySelector<HTMLElement>('main h1')?.focus({ preventScroll: true })
+    }
   }, [route])
 
   return (
     <div className="app">
-      {/* A button, not a #main link: the hash holds the route. */}
-      <button className="skip-link" onClick={() => document.getElementById('main')?.focus()}>
+      <a className="skip-link" href="#main">
         Skip to content
-      </button>
+      </a>
       <SiteHeader route={route} due={due} />
 
       <main id="main" className={`main main-${route.page}`} tabIndex={-1}>

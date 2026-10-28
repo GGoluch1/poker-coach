@@ -3,6 +3,7 @@ import type { DrillAnswer, DrillItem, Grade } from '../engine/drills'
 import { drillKey, gradeDrill, preflopChartOf } from '../engine/drills'
 import { dueCards } from '../engine/srs'
 import { randomSeed, runInWorker } from '../worker/client'
+import { SuitText } from './CardView'
 import { DrillQuestion } from './DrillQuestion'
 import { Icon } from './Icon'
 import { PageHeader } from './PageHeader'
@@ -185,6 +186,20 @@ export function DrillsPage({ mode }: { mode: DrillMode | null }) {
         {info.blurb}
       </PageHeader>
 
+      <nav className="drill-switcher" aria-label="Drills">
+        {DRILLS.map((d) => (
+          <a
+            key={d.id}
+            href={href({ page: 'drills', drill: d.id })}
+            className={`chip-btn${d.id === mode ? ' chip-btn-on' : ''}`}
+            aria-current={d.id === mode ? 'page' : undefined}
+          >
+            {d.id === 'review' ? 'Review' : d.title}
+            {d.id === 'review' && dueTotal > 0 && <span className="badge">{dueTotal}</span>}
+          </a>
+        ))}
+      </nav>
+
       <div className="drill-body">
         {loadError ? (
           <div className="drill-empty">
@@ -218,10 +233,14 @@ export function DrillsPage({ mode }: { mode: DrillMode | null }) {
             />
             {grade && (
               <div className={`feedback ${grade.correct ? 'feedback-good' : 'feedback-bad'}`}>
-                <p className="feedback-head">{grade.headline}</p>
+                <p className="feedback-head">
+                  <SuitText text={grade.headline} />
+                </p>
                 <ul>
                   {grade.details.map((d, i) => (
-                    <li key={i}>{d}</li>
+                    <li key={i}>
+                      <SuitText text={d} />
+                    </li>
                   ))}
                 </ul>
                 {current.item.kind === 'preflop' && (
