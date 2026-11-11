@@ -449,7 +449,10 @@ function CallFoldQuestion({
       <Situation lines={item.situation} />
       <Cards hole={item.hole} board={item.board} />
       {timed && !answered && (
-        <div className="timer" aria-label={`${left} seconds left`}>
+        <div
+          className={`timer${left <= 5 ? ' timer-low' : ''}`}
+          aria-label={`${left} seconds left`}
+        >
           <div className="timer-fill" style={{ width: `${(left / CALL_FOLD_SECONDS) * 100}%` }} />
           <span>{left}s</span>
         </div>

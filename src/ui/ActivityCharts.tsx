@@ -1,4 +1,4 @@
-import type { PointerEvent, ReactNode } from 'react'
+import type { CSSProperties, PointerEvent, ReactNode } from 'react'
 import { useState } from 'react'
 import type { DayLog } from '../engine/activity'
 
@@ -65,7 +65,11 @@ export function DailyActivityChart({ days }: { days: DayLog[] }) {
             // A 2px surface gap separates the two segments when both are present.
             const gap = hH > 0 && aH > 0 ? 2 : 0
             return (
-              <g key={d.day} className={hover !== null && hover !== i ? 'chart-dim' : undefined}>
+              <g
+                key={d.day}
+                className={hover !== null && hover !== i ? 'chart-dim' : undefined}
+                style={{ '--i': i } as CSSProperties}
+              >
                 {hH > 0 && (
                   <path
                     className="chart-fill-1"
@@ -207,7 +211,8 @@ export function ResultsChart({ days }: { days: DayLog[] }) {
               {fmt(lo)}
             </text>
           )}
-          <path className="chart-line" d={line} />
+          {/* pathLength 1 lets the line draw itself in with a dash animation. */}
+          <path className="chart-line" d={line} pathLength={1} />
           {hovered && (
             <>
               <line

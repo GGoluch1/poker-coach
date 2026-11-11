@@ -24,7 +24,8 @@ export function Tour({ steps, onClose }: { steps: TourStep[]; onClose: () => voi
     // Below the target, above it, then beside it; if nothing fits, overlap its top-left corner.
     const place = () => {
       const r = el.getBoundingClientRect()
-      const card = cardRef.current!.getBoundingClientRect()
+      // Layout size, not the on-screen box, which is smaller while the card scales in.
+      const card = { width: cardRef.current!.offsetWidth, height: cardRef.current!.offsetHeight }
       const gap = 16
       const clampX = (x: number) => Math.min(Math.max(gap, x), innerWidth - card.width - gap)
       const clampY = (y: number) => Math.min(Math.max(gap, y), innerHeight - card.height - gap)
@@ -44,10 +45,14 @@ export function Tour({ steps, onClose }: { steps: TourStep[]; onClose: () => voi
     nextRef.current?.focus({ preventScroll: true })
     window.addEventListener('resize', place)
     window.addEventListener('scroll', place, true)
+    // The card can grow after it's placed, e.g. when web fonts load and the text rewraps.
+    const resized = new ResizeObserver(place)
+    resized.observe(cardRef.current)
     return () => {
       el.classList.remove('tour-target')
       window.removeEventListener('resize', place)
       window.removeEventListener('scroll', place, true)
+      resized.disconnect()
     }
   }, [step.target, index])
 
@@ -73,11 +78,14 @@ export function Tour({ steps, onClose }: { steps: TourStep[]; onClose: () => voi
         aria-describedby="tour-body"
         style={pos ? { top: pos.top, left: pos.left } : { visibility: 'hidden' }}
       >
-        <p className="tour-count">
-          {index + 1} of {steps.length}
-        </p>
-        <h2 id="tour-title">{step.title}</h2>
-        <p id="tour-body">{step.body}</p>
+        {/* Keyed by step so each step's text fades in. */}
+        <div key={index} className="tour-step">
+          <p className="tour-count">
+            {index + 1} of {steps.length}
+          </p>
+          <h2 id="tour-title">{step.title}</h2>
+          <p id="tour-body">{step.body}</p>
+        </div>
         <div className="tour-actions">
           <button className="btn btn-quiet btn-small" onClick={finish}>
             Skip

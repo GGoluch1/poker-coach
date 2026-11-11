@@ -127,7 +127,9 @@ function LiveCoach({
       <div className="stat">
         <div className="stat-row">
           <span>Equity</span>
-          <strong>{equity === null ? '…' : pct(equity)}</strong>
+          <strong key={equity === null ? 'pending' : pct(equity)} className="num-pop">
+            {equity === null ? '…' : pct(equity)}
+          </strong>
         </div>
         <div className="meter" aria-hidden>
           <div className="meter-fill" style={{ width: pct(equity ?? 0) }} />

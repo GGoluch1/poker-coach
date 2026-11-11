@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { useEffect, useState } from 'react'
 import type { GameState } from '../engine/game'
 import { blindSeats, totalPot } from '../engine/game'
 import { describeHand, evaluateHand } from '../engine/hand'
@@ -12,6 +13,78 @@ import { HERO } from './useGame'
 /** Avatar hues, one per seat. */
 const SEAT_HUES = [152, 210, 28, 280, 340, 190]
 const ACTION_LABEL = { fold: 'Fold', check: 'Check', call: 'Call', bet: 'Bet', raise: 'Raise' }
+/** How long chips take to slide into the pot and out to the winner, stagger included. */
+const FLIGHT_MS = 1400
+
+/** Where a seat sits on the felt, in percent, and the unit vector toward the middle. */
+function seatGeometry(seat: number, seats: number) {
+  // Hero at the bottom, then clockwise.
+  const angle = Math.PI / 2 + (seat * 2 * Math.PI) / seats
+  return {
+    x: 50 + 44 * Math.cos(angle),
+    y: 50 + 41 * Math.sin(angle),
+    dx: -Math.cos(angle),
+    dy: -Math.sin(angle),
+  }
+}
+
+/** Index of the first board card in the latest deal, so a flop or run-out flips in order. */
+function newCardsFrom(game: GameState): number {
+  let dealt = 0
+  for (let i = game.events.length - 1; i >= 0; i--) {
+    const e = game.events[i]
+    if (e.type === 'deal') dealt += e.cards.length
+    else if (e.type !== 'win' && e.type !== 'refund') break
+  }
+  return game.board.length - dealt
+}
+
+interface Flight {
+  id: string
+  seat: number
+  kind: 'collect' | 'payout'
+}
+
+const prefersReducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+/**
+ * Chips that slide from each bet into the pot when a street ends, then from the pot to the
+ * winners when the hand ends. Found by comparing each state with the one before it.
+ */
+function useChipFlights(game: GameState): Flight[] {
+  const [prev, setPrev] = useState(game)
+  const [flights, setFlights] = useState<Flight[]>([])
+  if (prev !== game) {
+    // Adjusting state during render, as React recommends for reacting to a changed prop.
+    setPrev(game)
+    const added = prefersReducedMotion() ? [] : flightsBetween(prev, game)
+    if (added.length > 0) setFlights((f) => [...f, ...added])
+  }
+  useEffect(() => {
+    if (flights.length === 0) return
+    // Flights end transparent, so ones that land early can wait for the latest batch.
+    const id = setTimeout(() => setFlights((f) => f.filter((x) => !flights.includes(x))), FLIGHT_MS)
+    return () => clearTimeout(id)
+  }, [flights])
+  return flights
+}
+
+function flightsBetween(before: GameState, game: GameState): Flight[] {
+  if (before.handNumber !== game.handNumber) return []
+  const tag = `${game.handNumber}-${game.events.length}`
+  const added: Flight[] = []
+  game.players.forEach((p, seat) => {
+    if ((before.players[seat]?.bet ?? 0) > 0 && p.bet === 0) {
+      added.push({ id: `${tag}-c${seat}`, seat, kind: 'collect' })
+    }
+  })
+  if (game.handOver && !before.handOver) {
+    const winners = new Set<number>()
+    for (const e of game.events) if (e.type === 'win') winners.add(e.seat)
+    for (const seat of winners) added.push({ id: `${tag}-p${seat}`, seat, kind: 'payout' })
+  }
+  return added
+}
 
 interface Props {
   game: GameState
@@ -46,18 +119,29 @@ export function Table({ game, profiles = [], seatStats, replay = false }: Props)
   }
   const { bb } = game.handNumber > 0 ? blindSeats(game) : { bb: -1 }
   const pot = totalPot(game)
+  const flights = useChipFlights(game)
+  const firstNew = newCardsFrom(game)
 
   return (
     <div className="table-wrap">
-      <div className="felt">
+      <div className="felt" style={{ '--seats': n } as CSSProperties}>
         <div className="felt-center">
           <div className="board">
             {[0, 1, 2, 3, 4].map((i) => (
-              <CardView key={i} card={game.board[i]} size="lg" />
+              <span
+                key={i}
+                className="board-slot"
+                style={{ '--deal-i': Math.max(0, i - firstNew) } as CSSProperties}
+              >
+                <CardView card={game.board[i]} size="lg" />
+              </span>
             ))}
           </div>
           <div className="pot">
-            Pot <strong>{pot}</strong>
+            Pot {/* Keyed by amount so it pops whenever chips go in. */}
+            <strong key={pot} className="pot-amount">
+              {pot}
+            </strong>
           </div>
           {game.handOver && !replay && (
             <div className="result">
@@ -67,10 +151,7 @@ export function Table({ game, profiles = [], seatStats, replay = false }: Props)
         </div>
 
         {game.players.map((p, seat) => {
-          // Hero at the bottom, then clockwise.
-          const angle = Math.PI / 2 + (seat * 2 * Math.PI) / n
-          const x = 50 + 44 * Math.cos(angle)
-          const y = 50 + 41 * Math.sin(angle)
+          const { x, y, dx, dy } = seatGeometry(seat, n)
           const isHero = seat === HERO
           const live = p.inHand && !p.folded
           const reveal = isHero || (game.showdown && live)
@@ -83,13 +164,33 @@ export function Table({ game, profiles = [], seatStats, replay = false }: Props)
             !live && 'seat-out',
             won && 'seat-won',
           ]
+          const badge = won
+            ? { text: `Wins ${won}`, className: ' badge-win' }
+            : p.allIn
+              ? { text: 'All in', className: ' badge-allin' }
+              : p.folded && p.inHand
+                ? { text: 'Folded', className: ' badge-fold' }
+                : action
+                  ? { text: action, className: '' }
+                  : null
+          // Cards go out one at a time, starting left of the button.
+          const dealOrder = (seat - game.button - 1 + n) % n
           return (
             <div
               key={seat}
               className={classes.filter(Boolean).join(' ')}
-              style={{ left: `${x}%`, top: `${y}%` }}
+              style={
+                {
+                  left: `${x}%`,
+                  top: `${y}%`,
+                  '--dx': dx,
+                  '--dy': dy,
+                  '--deal-order': dealOrder,
+                } as CSSProperties
+              }
             >
-              <div className="seat-cards">
+              {/* Keyed by hand so each new hand deals the cards in again. */}
+              <div className="seat-cards" key={game.handNumber}>
                 {p.inHand &&
                   p.hole.map((c, i) => (
                     <CardView key={i} card={c} size="md" hidden={!reveal} dim={p.folded} />
@@ -121,15 +222,12 @@ export function Table({ game, profiles = [], seatStats, replay = false }: Props)
                   </div>
                 )}
               </div>
-              {won ? (
-                <div className="seat-badge badge-win">Wins {won}</div>
-              ) : p.allIn ? (
-                <div className="seat-badge badge-allin">All in</div>
-              ) : p.folded && p.inHand ? (
-                <div className="seat-badge badge-fold">Folded</div>
-              ) : action ? (
-                <div className="seat-badge">{action}</div>
-              ) : null}
+              {badge && (
+                // Keyed by text so each new action pops in.
+                <div key={badge.text} className={`seat-badge${badge.className}`}>
+                  {badge.text}
+                </div>
+              )}
               {game.showdown && live && !isHero && game.board.length === 5 && (
                 <div className="seat-hand">{describeShown(game, seat)}</div>
               )}
@@ -139,11 +237,8 @@ export function Table({ game, profiles = [], seatStats, replay = false }: Props)
                 </span>
               )}
               {p.bet > 0 && (
-                // Offset toward the middle of the table.
-                <div
-                  className="bet"
-                  style={{ '--dx': -Math.cos(angle), '--dy': -Math.sin(angle) } as CSSProperties}
-                >
+                // Offset toward the middle of the table; keyed so a raise slides in fresh chips.
+                <div key={p.bet} className="bet">
                   <span className="chip" aria-hidden />
                   {p.bet}
                   {seat === bb && game.street === 'preflop' && p.bet === game.bigBlind && (
@@ -153,6 +248,18 @@ export function Table({ game, profiles = [], seatStats, replay = false }: Props)
               )}
             </div>
           )
+        })}
+
+        {flights.map((f) => {
+          const { x, y, dx, dy } = seatGeometry(f.seat, n)
+          return [0, 1, 2].map((i) => (
+            <span
+              key={`${f.id}-${i}`}
+              className={`chip chip-fly chip-${f.kind}`}
+              style={{ '--x': x, '--y': y, '--dx': dx, '--dy': dy, '--i': i } as CSSProperties}
+              aria-hidden
+            />
+          ))
         })}
       </div>
     </div>

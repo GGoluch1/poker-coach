@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import { useState } from 'react'
 import type { ChartSituation } from '../engine/charts'
 import { PREFLOP_CHARTS, chartAction, getChart } from '../engine/charts'
@@ -65,7 +66,13 @@ export function RangeChart({ chartId, position, current }: Props) {
             const action = chartAction(chart, cls)
             const classes = ['cell', `cell-${action}`, cls === current && 'cell-current']
             return (
-              <div key={cls} className={classes.filter(Boolean).join(' ')} role="gridcell">
+              <div
+                key={cls}
+                className={classes.filter(Boolean).join(' ')}
+                role="gridcell"
+                // Colors change in a wave from the top-left corner when the chart switches.
+                style={{ '--wave': row + col } as CSSProperties}
+              >
                 {cls}
               </div>
             )

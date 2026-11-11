@@ -49,24 +49,16 @@ export function PlayPage() {
   const hero = game.players[HERO]
   const heroTurn = !game.handOver && game.toAct === HERO
   const gameOver = sessionOver(game)
-  const heroPosition = hero.inHand
-    ? positions(
-        game.players.map((p) => p.inHand),
-        game.button,
-      )[HERO]
-    : null
+  const seatPositions = positions(
+    game.players.map((p) => p.inHand),
+    game.button,
+  )
+  const heroPosition = hero.inHand ? seatPositions[HERO] : null
   const heroClass = hero.hole.length === 2 ? handClass(hero.hole[0], hero.hole[1]) : null
   // Show the chart for the hero's current preflop spot, if one applies.
   const heroChartId =
     !game.handOver && game.street === 'preflop' && hero.inHand && !hero.folded
-      ? (findPreflopChart(
-          game.events,
-          HERO,
-          positions(
-            game.players.map((p) => p.inHand),
-            game.button,
-          ),
-        )?.id ?? null)
+      ? (findPreflopChart(game.events, HERO, seatPositions)?.id ?? null)
       : null
 
   const startNew = () => {
@@ -176,7 +168,12 @@ export function PlayPage() {
             </div>
           ) : (
             <div className="action-bar action-wait muted">
-              {game.players[game.toAct ?? HERO].name} is thinking…
+              {game.players[game.toAct ?? HERO].name} is thinking
+              <span className="thinking-dots" aria-hidden>
+                <span />
+                <span />
+                <span />
+              </span>
             </div>
           )}
         </section>

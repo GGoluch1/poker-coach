@@ -7,7 +7,7 @@ import { SuitText } from './CardView'
 import { DrillQuestion } from './DrillQuestion'
 import { Icon } from './Icon'
 import { PageHeader } from './PageHeader'
-import { recordDeckAnswer, recordDrill, useProgress } from './progress'
+import { recordDrillAnswer, useProgress } from './progress'
 import { RangeChart } from './RangeChart'
 import { HOME_CRUMB, href } from './routes'
 import type { DrillMode } from './siteMap'
@@ -80,8 +80,7 @@ export function DrillsPage({ mode }: { mode: DrillMode | null }) {
     if (!current) return
     setGrade(g)
     setSession((s) => ({ answered: s.answered + 1, correct: s.correct + (g.correct ? 1 : 0) }))
-    recordDrill(current.item.kind, g.correct)
-    recordDeckAnswer(current.item, current.key, current.fromDeck, g.correct)
+    recordDrillAnswer(current.item, current.key, current.fromDeck, g.correct)
   }
 
   const answer = (a: DrillAnswer) => current && !grade && finish(gradeDrill(current.item, a))
@@ -161,12 +160,16 @@ export function DrillsPage({ mode }: { mode: DrillMode | null }) {
         actions={
           <>
             <span className="pill-stat">
-              {session.correct}/{session.answered}
+              <span key={session.answered} className="num-pop">
+                {session.correct}/{session.answered}
+              </span>
               <span className="muted"> this session</span>
             </span>
             {score && score.streak > 0 && (
               <span className="pill-stat">
-                {score.streak}
+                <span key={score.streak} className="num-pop">
+                  {score.streak}
+                </span>
                 <span className="muted"> streak</span>
               </span>
             )}

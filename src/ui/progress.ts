@@ -112,40 +112,37 @@ export function recordHand(id: string, result: HandReviewResult, now = Date.now(
   })
 }
 
-export function recordDrill(kind: DrillKind, correct: boolean) {
+/**
+ * Scores a drill answer and updates the spaced-repetition deck, in one save. `key` identifies
+ * the item in the deck; `fromDeck` says whether it was a review card.
+ */
+export function recordDrillAnswer(
+  item: DrillItem,
+  key: string,
+  fromDeck: boolean,
+  correct: boolean,
+  now = Date.now(),
+) {
   updateProgress((p) => {
-    const prev = p.drills[kind] ?? { attempts: 0, correct: 0, streak: 0, bestStreak: 0 }
+    const prev = p.drills[item.kind] ?? { attempts: 0, correct: 0, streak: 0, bestStreak: 0 }
     const streak = correct ? prev.streak + 1 : 0
     return {
       ...p,
       drills: {
         ...p.drills,
-        [kind]: {
+        [item.kind]: {
           attempts: prev.attempts + 1,
           correct: prev.correct + (correct ? 1 : 0),
           streak,
           bestStreak: Math.max(prev.bestStreak, streak),
         },
       },
-      days: logDay(p.days, Date.now(), { answers: 1, correct: correct ? 1 : 0 }),
+      deck: fromDeck
+        ? recordAnswer(p.deck, key, correct, now)
+        : correct
+          ? p.deck
+          : addMiss(p.deck, key, item, now),
+      days: logDay(p.days, now, { answers: 1, correct: correct ? 1 : 0 }),
     }
   })
-}
-
-/** Updates the spaced-repetition deck after a drill answer. */
-export function recordDeckAnswer(
-  item: DrillItem,
-  key: string,
-  fromDeck: boolean,
-  correct: boolean,
-) {
-  const now = Date.now()
-  updateProgress((p) => ({
-    ...p,
-    deck: fromDeck
-      ? recordAnswer(p.deck, key, correct, now)
-      : correct
-        ? p.deck
-        : addMiss(p.deck, key, item, now),
-  }))
 }

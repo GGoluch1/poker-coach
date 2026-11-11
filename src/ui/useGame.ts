@@ -11,6 +11,11 @@ import { recordHand } from './progress'
 export const HERO = 0
 const BOT_NAMES = ['Ava', 'Ben', 'Cleo', 'Dev', 'Eli']
 const STORAGE_KEY = 'poker-coach:session:v3'
+/**
+ * Finished hands are stored apart from the live hand: they change once per hand, while the live
+ * hand is saved after every action and would otherwise rewrite ~400 KB of history each time.
+ */
+const HISTORY_KEY = 'poker-coach:history:v1'
 const STARTING_STACK = 200
 
 /** Who sits at the table: everyone the same personality, or a random mix. */
@@ -109,12 +114,27 @@ function load(): Session | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
-    const s = JSON.parse(raw) as Session
-    return s.gameId && s.game?.players?.length >= 2 && Array.isArray(s.history) && s.seatStats
-      ? s
+    const s = JSON.parse(raw) as Partial<Session>
+    // Saves from before the split keep their history inline.
+    const savedHistory = localStorage.getItem(HISTORY_KEY)
+    const history = savedHistory ? (JSON.parse(savedHistory) as HandRecord[]) : s.history
+    return s.gameId &&
+      s.game &&
+      s.game.players?.length >= 2 &&
+      Array.isArray(history) &&
+      s.seatStats
+      ? ({ ...s, history } as Session)
       : null
   } catch {
     return null
+  }
+}
+
+function save(key: string, value: unknown) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    // Storage full or blocked: the game still works, it just won't survive a reload.
   }
 }
 
@@ -134,13 +154,12 @@ export function useGame() {
   const { game } = session
   const latest = session.history[0]
 
+  const { history } = session
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(session))
-    } catch {
-      // Storage full or blocked: the game still works, it just won't survive a reload.
-    }
+    const { history: _history, ...live } = session
+    save(STORAGE_KEY, live)
   }, [session])
+  useEffect(() => save(HISTORY_KEY, history), [history])
 
   // Bots decide in the worker after a short pause so the hero can follow along.
   useEffect(() => {

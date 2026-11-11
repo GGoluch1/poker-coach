@@ -36,7 +36,10 @@ export function ThemeToggle() {
       aria-label={`Switch to ${next} theme`}
       title={`Switch to ${next} theme`}
     >
-      <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
+      {/* Keyed so the new icon spins in. */}
+      <span key={theme} className="theme-icon">
+        <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
+      </span>
     </button>
   )
 }
