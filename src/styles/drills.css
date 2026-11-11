@@ -55,6 +55,16 @@
   gap: 6px;
   margin: -12px 0 20px;
 }
+.difficulty-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  margin: -6px 0 18px;
+}
+.difficulty-row p {
+  margin: 0;
+}
 .drill-switcher .chip-btn {
   display: inline-flex;
   align-items: center;

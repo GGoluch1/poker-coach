@@ -1,7 +1,7 @@
 import type { Spot } from '../engine/analysis'
 import { analyzeSpot } from '../engine/analysis'
 import { chooseBotAction } from '../engine/bot'
-import type { DrillItem, GeneratedKind } from '../engine/drills'
+import type { Difficulty, DrillItem, GeneratedKind } from '../engine/drills'
 import { drillKey, generateDrill, handItem } from '../engine/drills'
 import { chosenOption, optionEvs } from '../engine/ev'
 import type { Action, GameState, Street } from '../engine/game'
@@ -72,7 +72,7 @@ export interface WorkerApi {
     }
     res: HandReviewResult
   }
-  drill: { req: { kind: GeneratedKind; seed: number }; res: DrillItem }
+  drill: { req: { kind: GeneratedKind; seed: number; difficulty?: Difficulty }; res: DrillItem }
   solve: { req: { game: RiverGame; iterations: number }; res: SolverResult }
   importHands: { req: { text: string }; res: ImportResult }
 }
@@ -142,7 +142,7 @@ const jobs: { [K in JobType]: (req: WorkerApi[K]['req']) => WorkerApi[K]['res'] 
     }
   },
 
-  drill: ({ kind, seed }) => generateDrill(kind, seededRng(seed)),
+  drill: ({ kind, seed, difficulty }) => generateDrill(kind, seededRng(seed), difficulty),
 
   solve: ({ game, iterations }) => solveRiver(game, iterations),
 

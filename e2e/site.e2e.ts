@@ -84,6 +84,23 @@ test('dropdown menus open, close and navigate', async ({ page, isMobile }) => {
   await expect(page.locator('.prompt')).toBeVisible()
 })
 
+test('each drill remembers its difficulty', async ({ page }) => {
+  await page.goto('/drills/mdf')
+  const levels = page.getByRole('radiogroup', { name: 'Difficulty' })
+  await expect(levels.getByRole('radio', { name: 'Medium' })).toBeChecked()
+  await levels.getByRole('radio', { name: 'Easy' }).click()
+  await expect(page.getByText('Half-pot and pot-sized bets')).toBeVisible()
+  // Easy deals only half-pot or pot bets.
+  await expect(page.locator('.math-spot')).toContainText(/(50|100)% pot/)
+
+  await page.reload()
+  await expect(levels.getByRole('radio', { name: 'Easy' })).toBeChecked()
+  await page.goto('/drills/outs')
+  await expect(levels.getByRole('radio', { name: 'Medium' })).toBeChecked()
+  await page.goto('/drills/review')
+  await expect(levels).toHaveCount(0)
+})
+
 test('the phone menu covers the screen and navigates', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'phone layout only')
   await page.goto('/')

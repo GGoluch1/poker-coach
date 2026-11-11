@@ -8,13 +8,13 @@ import type { HandClass } from '../engine/range'
 import type { Connectedness, SuitTexture, Wetness } from '../engine/texture'
 import { CardView, SuitText } from './CardView'
 
-const CALL_FOLD_SECONDS = 20
-
 interface Props {
   item: DrillItem
   /** True once answered; inputs lock. */
   answered: boolean
   timed: boolean
+  /** Length of the call-or-fold timer. */
+  seconds: number
   onAnswer: (answer: DrillAnswer) => void
   onTimeout: () => void
 }
@@ -74,7 +74,7 @@ function useKeys(onKey: (key: string) => void, enabled: boolean) {
   })
 }
 
-export function DrillQuestion({ item, answered, timed, onAnswer, onTimeout }: Props) {
+export function DrillQuestion({ item, answered, timed, seconds, onAnswer, onTimeout }: Props) {
   switch (item.kind) {
     case 'outs':
       return <OutsQuestion item={item} answered={answered} onAnswer={onAnswer} />
@@ -88,6 +88,7 @@ export function DrillQuestion({ item, answered, timed, onAnswer, onTimeout }: Pr
           item={item}
           answered={answered}
           timed={timed}
+          seconds={seconds}
           onAnswer={onAnswer}
           onTimeout={onTimeout}
         />
@@ -422,10 +423,11 @@ function CallFoldQuestion({
   item,
   answered,
   timed,
+  seconds,
   onAnswer,
   onTimeout,
-}: Q<'callfold'> & { timed: boolean; onTimeout: () => void }) {
-  const [left, setLeft] = useState(CALL_FOLD_SECONDS)
+}: Q<'callfold'> & { timed: boolean; seconds: number; onTimeout: () => void }) {
+  const [left, setLeft] = useState(seconds)
   // Read the latest callback without restarting the countdown when it changes.
   const onTimeoutRef = useRef(onTimeout)
   useEffect(() => {
@@ -453,7 +455,7 @@ function CallFoldQuestion({
           className={`timer${left <= 5 ? ' timer-low' : ''}`}
           aria-label={`${left} seconds left`}
         >
-          <div className="timer-fill" style={{ width: `${(left / CALL_FOLD_SECONDS) * 100}%` }} />
+          <div className="timer-fill" style={{ width: `${(left / seconds) * 100}%` }} />
           <span>{left}s</span>
         </div>
       )}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import type { DrillAnswer, DrillItem, Grade } from '../engine/drills'
-import { drillKey, gradeDrill, preflopChartOf } from '../engine/drills'
+import type { Difficulty, DrillAnswer, DrillItem, Grade } from '../engine/drills'
+import { DIFFICULTIES, drillKey, gradeDrill, preflopChartOf } from '../engine/drills'
 import { dueCards } from '../engine/srs'
 import { randomSeed, runInWorker } from '../worker/client'
 import { SuitText } from './CardView'
@@ -10,8 +10,9 @@ import { PageHeader } from './PageHeader'
 import { recordDrillAnswer, useProgress } from './progress'
 import { RangeChart } from './RangeChart'
 import { HOME_CRUMB, href } from './routes'
+import { loadDifficulty, saveDifficulty } from './difficulty'
 import type { DrillMode } from './siteMap'
-import { DRILLS, drillInfo } from './siteMap'
+import { CALL_FOLD_SECONDS, DIFFICULTY_LABEL, DIFFICULTY_NOTES, DRILLS, drillInfo } from './siteMap'
 import { useNow } from './useNow'
 
 const DRILLS_CRUMB = { label: 'Drills', href: href({ page: 'drills', drill: null }) }
@@ -21,6 +22,8 @@ interface Current {
   key: string
   /** True when the item came from the spaced-repetition deck. */
   fromDeck: boolean
+  /** Difficulty it was dealt at; review cards keep the one they were made at. */
+  level: Difficulty | null
 }
 
 /** The list of drills, or one drill when `mode` is set. The URL picks it, so it never changes. */
@@ -36,19 +39,28 @@ export function DrillsPage({ mode }: { mode: DrillMode | null }) {
   // Increments per question so answering doesn't remount (and clear) the inputs.
   const [dealId, setDealId] = useState(0)
   const dueTotal = dueCards(progress.deck, useNow()).length
+  // The review deck replays saved spots as they were, so only fresh drills have a difficulty.
+  const practice = mode !== null && mode !== 'review' ? mode : null
+  const [difficulty, setDifficulty] = useState<Difficulty>(() =>
+    practice ? loadDifficulty(practice) : 'medium',
+  )
 
   /** Picks the next question: a due review card or a fresh one from the worker. */
-  async function pickItem(forMode: DrillMode): Promise<Current | null> {
+  async function pickItem(forMode: DrillMode, level: Difficulty): Promise<Current | null> {
     const due = dueCards(progress.deck, Date.now(), (item) =>
       forMode === 'review' ? true : item.kind === forMode,
     )
     // Mix due reviews into regular drills about half the time.
     if (due.length > 0 && (forMode === 'review' || Math.random() < 0.5)) {
-      return { item: due[0].item, key: due[0].key, fromDeck: true }
+      return { item: due[0].item, key: due[0].key, fromDeck: true, level: null }
     }
     if (forMode === 'review') return null
-    const item = await runInWorker('drill', { kind: forMode, seed: randomSeed() })
-    return { item, key: drillKey(item), fromDeck: false }
+    const item = await runInWorker('drill', {
+      kind: forMode,
+      seed: randomSeed(),
+      difficulty: level,
+    })
+    return { item, key: drillKey(item), fromDeck: false, level }
   }
 
   function show(picked: Current | null) {
@@ -58,16 +70,24 @@ export function DrillsPage({ mode }: { mode: DrillMode | null }) {
     setLoading(false)
   }
 
-  function next(forMode: DrillMode | null = mode) {
+  function next(forMode: DrillMode | null = mode, level: Difficulty = difficulty) {
     if (!forMode) return
     setGrade(null)
     setEmpty(false)
     setLoadError(null)
     setLoading(true)
-    pickItem(forMode).then(show, (e: Error) => {
+    pickItem(forMode, level).then(show, (e: Error) => {
       setLoading(false)
       setLoadError(e.message)
     })
+  }
+
+  /** Saves the level and, unless the question is already answered, deals one at that level. */
+  function changeDifficulty(level: Difficulty) {
+    if (!practice || level === difficulty) return
+    setDifficulty(level)
+    saveDifficulty(practice, level)
+    if (!grade) next(mode, level)
   }
 
   // Deal the first question.
@@ -203,6 +223,31 @@ export function DrillsPage({ mode }: { mode: DrillMode | null }) {
         ))}
       </nav>
 
+      {practice && (
+        <div className="difficulty-row">
+          <div className="segmented" role="radiogroup" aria-label="Difficulty">
+            {DIFFICULTIES.map((level) => (
+              <button
+                key={level}
+                role="radio"
+                aria-checked={difficulty === level}
+                className={`seg${difficulty === level ? ' seg-on' : ''}`}
+                title={DIFFICULTY_NOTES[practice][level]}
+                onClick={() => changeDifficulty(level)}
+              >
+                {DIFFICULTY_LABEL[level]}
+              </button>
+            ))}
+          </div>
+          <p className="muted small">
+            {DIFFICULTY_NOTES[practice][difficulty]}
+            {grade && current?.level && current.level !== difficulty
+              ? ' Applies from the next question.'
+              : null}
+          </p>
+        </div>
+      )}
+
       <div className="drill-body">
         {loadError ? (
           <div className="drill-empty">
@@ -231,6 +276,7 @@ export function DrillsPage({ mode }: { mode: DrillMode | null }) {
               item={current.item}
               answered={grade !== null}
               timed={timed}
+              seconds={CALL_FOLD_SECONDS[difficulty]}
               onAnswer={answer}
               onTimeout={timeout}
             />

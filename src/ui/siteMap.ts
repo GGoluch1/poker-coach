@@ -1,4 +1,4 @@
-import type { GeneratedKind } from '../engine/drills'
+import type { Difficulty, GeneratedKind } from '../engine/drills'
 import type { IconName } from './Icon'
 import type { Route } from './routes'
 
@@ -83,6 +83,54 @@ export const DRILLS: DrillInfo[] = [
     blurb: 'Spaced repetition: drills you missed and mistakes from your own hands come back here.',
   },
 ]
+
+/** What each difficulty level deals, per drill. Medium is the original mix. */
+export const DIFFICULTY_NOTES: Record<GeneratedKind, Record<Difficulty, string>> = {
+  outs: {
+    easy: 'Flops with a single draw.',
+    medium: 'Flops and turns with a draw, sometimes with a pair.',
+    hard: 'Combo draws and pairs plus draws, where outs overlap.',
+  },
+  callfold: {
+    easy: 'Clear calls and folds, with 30 seconds on the clock.',
+    medium: 'A mix of clear and close spots, with 20 seconds.',
+    hard: 'Close spots, 3 to 8 points from the price, with 12 seconds.',
+  },
+  preflop: {
+    easy: 'Opening ranges only, mostly clear-cut hands.',
+    medium: 'Opens, defends and 3-bets, favoring hands near the edge.',
+    hard: 'Defending and facing 3-bets, with hands at the edge of the range.',
+  },
+  texture: {
+    easy: 'Boards that are mostly clear-cut.',
+    medium: 'Any flop.',
+    hard: 'Boards with two or more in-between labels.',
+  },
+  mdf: {
+    easy: 'Half-pot and pot-sized bets into round pots.',
+    medium: 'Common bet sizes from a quarter pot to twice the pot.',
+    hard: 'Odd bet sizes up to 3× pot, into odd pots.',
+  },
+  combos: {
+    easy: 'Flops only, and pairs or hands counted suited and offsuit together.',
+    medium: 'Flops to rivers, with suited and offsuit targets.',
+    hard: 'Turns and rivers, every rank blocked, mostly suited or offsuit.',
+  },
+  setmine: {
+    easy: 'Clear calls and folds, at least 2 bb either way.',
+    medium: 'Any stack depth and price.',
+    hard: 'Close spots, within 1 bb of break-even.',
+  },
+}
+
+export const DIFFICULTY_LABEL: Record<Difficulty, string> = {
+  easy: 'Easy',
+  medium: 'Medium',
+  hard: 'Hard',
+}
+
+/** Seconds on the call-or-fold timer at each difficulty. */
+export const CALL_FOLD_SECONDS: Record<Difficulty, number> = { easy: 30, medium: 20, hard: 12 }
 
 /** The drills that deal fresh questions, without the review deck. */
 export const PRACTICE_DRILLS = DRILLS.filter((d) => d.id !== 'review')

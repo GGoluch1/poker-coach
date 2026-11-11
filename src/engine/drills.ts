@@ -79,6 +79,20 @@ export type DrillItem =
 export type DrillKind = DrillItem['kind']
 export type GeneratedKind = Exclude<DrillKind, 'hand'>
 
+/** How hard generated questions are. Medium is the original mix. */
+export type Difficulty = 'easy' | 'medium' | 'hard'
+export const DIFFICULTIES: readonly Difficulty[] = ['easy', 'medium', 'hard']
+
+/**
+ * Makes items until one passes `accept`, giving up after `attempts` and returning the last, so
+ * a filter that rarely matches can't stall the drill.
+ */
+function generateUntil(make: () => DrillItem, accept: (item: DrillItem) => boolean, attempts = 40) {
+  let item = make()
+  for (let i = 1; i < attempts && !accept(item); i++) item = make()
+  return item
+}
+
 export type DrillAnswer =
   | { kind: 'outs'; outs: number }
   | { kind: 'preflop'; action: ChartAction }
@@ -131,28 +145,48 @@ export function drillKey(item: DrillItem): string {
   }
 }
 
-export function outsItem(rng: Rng): DrillItem {
+/**
+ * Easy: a single draw on the flop. Hard: three or more ways to improve, like a combo draw or
+ * a pair plus a draw, where outs overlap and are easy to double-count.
+ */
+export function outsItem(rng: Rng, difficulty: Difficulty = 'medium'): DrillItem {
+  const flopChance = difficulty === 'easy' ? 1 : 0.6
   for (;;) {
     const deck = shuffle(createDeck(), rng)
     const hole = deck.slice(0, 2)
-    const board = deck.slice(2, rng() < 0.6 ? 5 : 6)
+    const board = deck.slice(2, rng() < flopChance ? 5 : 6)
     const made = HAND_CATEGORIES.indexOf(evaluateHand([...hole, ...board]).category)
     const groups = findOuts(hole, board)
     const outs = groups.reduce((n, g) => n + g.cards.length, 0)
     const draw = groups.some((g) => g.category === 'Straight' || g.category === 'Flush')
     // Classic outs spots: at most a pair, with a straight or flush draw.
-    if (made <= 1 && draw && outs <= 21) return { kind: 'outs', hole, board }
+    if (made > 1 || !draw || outs > 21) continue
+    if (difficulty === 'easy' && (groups.length > 2 || outs > 15)) continue
+    if (difficulty === 'hard' && groups.length < 3) continue
+    return { kind: 'outs', hole, board }
   }
 }
 
-export function preflopItem(rng: Rng): DrillItem {
-  const chart = pick(PREFLOP_CHARTS, rng)
+/**
+ * Easy: opening charts only, mostly clear-cut hands. Hard: defending and facing 3-bets, with
+ * hands bunched at the edge of the range.
+ */
+export function preflopItem(rng: Rng, difficulty: Difficulty = 'medium'): DrillItem {
+  const charts =
+    difficulty === 'easy'
+      ? PREFLOP_CHARTS.filter((c) => c.situation === 'open')
+      : difficulty === 'hard'
+        ? PREFLOP_CHARTS.filter((c) => c.situation !== 'open')
+        : PREFLOP_CHARTS
+  const chart = pick(charts, rng)
   const edge = rangeFraction(chart.raise) + rangeFraction(chart.call)
+  // How strongly to favor hands near the edge of the range.
+  const focus = difficulty === 'easy' ? 2 : difficulty === 'hard' ? 40 : 12
   // Favor hands in the chart and near its edge; AA and 72o teach nothing after the first time.
   const weights = ALL_CLASSES.map(
     (cls) =>
       (chart.raise.has(cls) || chart.call.has(cls) ? 0.6 : 0) +
-      1 / (1 + 12 * Math.abs(STRENGTH_PERCENTILE.get(cls)! - edge)),
+      1 / (1 + focus * Math.abs(STRENGTH_PERCENTILE.get(cls)! - edge)),
   )
   let roll = rng() * weights.reduce((a, b) => a + b, 0)
   let i = 0
@@ -160,11 +194,38 @@ export function preflopItem(rng: Rng): DrillItem {
   return { kind: 'preflop', chartId: chart.id, handClass: ALL_CLASSES[i] }
 }
 
-export function textureItem(rng: Rng): DrillItem {
-  return { kind: 'texture', board: shuffle(createDeck(), rng).slice(0, 3) }
+/** In-between labels, the ones that take judgment. */
+const BORDERLINE = new Set(['two-tone', 'semi-connected', 'semi-wet'])
+
+/** Easy: at most one in-between label. Hard: at least two. */
+export function textureItem(rng: Rng, difficulty: Difficulty = 'medium'): DrillItem {
+  const make = (): DrillItem => ({ kind: 'texture', board: shuffle(createDeck(), rng).slice(0, 3) })
+  if (difficulty === 'medium') return make()
+  return generateUntil(make, (item) => {
+    const t = describeBoard((item as Extract<DrillItem, { kind: 'texture' }>).board)
+    const borderline = [t.suits, t.connectedness, t.wetness].filter((x) => BORDERLINE.has(x)).length
+    return difficulty === 'easy' ? borderline <= 1 : borderline >= 2
+  })
 }
 
-export function callFoldItem(rng: Rng): DrillItem {
+/**
+ * Easy: equity at least 15 points from the price. Hard: 3 to 8 points away, close enough to
+ * need real care but never a toss-up graded either way.
+ */
+export function callFoldItem(rng: Rng, difficulty: Difficulty = 'medium'): DrillItem {
+  if (difficulty === 'medium') return callFoldSpot(rng)
+  return generateUntil(
+    () => callFoldSpot(rng),
+    (item) => {
+      const { equity, need } = item as Extract<DrillItem, { kind: 'callfold' }>
+      const gap = Math.abs(equity - need)
+      return difficulty === 'easy' ? gap >= 0.15 : gap >= 0.03 && gap <= 0.08
+    },
+    15,
+  )
+}
+
+function callFoldSpot(rng: Rng): DrillItem {
   const streets: Street[] = ['flop', 'turn', 'river']
   const s = generateSpot({ street: pick(streets, rng), facingBet: true, rng })
   const spot = analyzeSpot(s, 0, { iterations: 4000, rng, withOuts: false })
@@ -184,9 +245,18 @@ export function callFoldItem(rng: Rng): DrillItem {
   }
 }
 
-export function mdfItem(rng: Rng): DrillItem {
-  const pot = 10 * (1 + Math.floor(rng() * 10))
-  const fraction = pick([0.25, 0.33, 0.5, 0.66, 0.75, 1, 1.25, 1.5, 2], rng)
+/** Bet sizes as a fraction of the pot. */
+const MDF_SIZES: Record<Difficulty, number[]> = {
+  easy: [0.5, 1],
+  medium: [0.25, 0.33, 0.5, 0.66, 0.75, 1, 1.25, 1.5, 2],
+  hard: [0.4, 0.6, 0.8, 1.1, 1.3, 1.75, 2.5, 3],
+}
+
+/** Easy: half-pot and pot bets into round pots. Hard: odd sizes into odd pots. */
+export function mdfItem(rng: Rng, difficulty: Difficulty = 'medium'): DrillItem {
+  const pot =
+    difficulty === 'hard' ? 12 + Math.floor(rng() * 139) : 10 * (1 + Math.floor(rng() * 10))
+  const fraction = pick(MDF_SIZES[difficulty], rng)
   return {
     kind: 'mdf',
     pot,
@@ -220,13 +290,21 @@ const RANK_PLURALS = [
   'Aces',
 ]
 
-export function combosItem(rng: Rng): DrillItem {
+/**
+ * Easy: a flop, and pairs or both suitednesses together, which need no suit bookkeeping.
+ * Hard: more cards out, ranks you can always see, and mostly suited or offsuit targets.
+ */
+export function combosItem(rng: Rng, difficulty: Difficulty = 'medium'): DrillItem {
   const deck = shuffle(createDeck(), rng)
   const hole = deck.slice(0, 2)
-  const board = deck.slice(2, 2 + pick([3, 3, 4, 5], rng))
+  const boardSizes = difficulty === 'easy' ? [3] : difficulty === 'hard' ? [4, 5] : [3, 3, 4, 5]
+  const board = deck.slice(2, 2 + pick(boardSizes, rng))
   // Ask about ranks you can see, so blockers matter.
   const seen = [...hole, ...board].map((c) => RANK_CHARS[c.rank - 2])
-  const rank = () => (rng() < 0.75 ? pick(seen, rng) : pick([...RANK_CHARS], rng))
+  const seenChance = difficulty === 'hard' ? 1 : 0.75
+  const rank = () => (rng() < seenChance ? pick(seen, rng) : pick([...RANK_CHARS], rng))
+  const suffixes =
+    difficulty === 'easy' ? [''] : difficulty === 'hard' ? ['', 's', 'o', 'o'] : ['', '', 's', 'o']
   let target: string
   if (rng() < 0.35) {
     const r = rank()
@@ -234,9 +312,10 @@ export function combosItem(rng: Rng): DrillItem {
   } else {
     let a = rank()
     let b = rank()
-    while (b === a) b = pick([...RANK_CHARS], rng)
+    // Hard re-draws from visible ranks too; at least two different ranks are always showing.
+    while (b === a) b = difficulty === 'hard' ? rank() : pick([...RANK_CHARS], rng)
     if (RANK_CHARS.indexOf(a) < RANK_CHARS.indexOf(b)) [a, b] = [b, a]
-    target = a + b + pick(['', '', 's', 'o'], rng)
+    target = a + b + pick(suffixes, rng)
   }
   return { kind: 'combos', hole, board, target }
 }
@@ -249,14 +328,21 @@ export function remainingCombos(item: Extract<DrillItem, { kind: 'combos' }>): n
     .filter(([a, b]) => !dead.has(cardToString(a)) && !dead.has(cardToString(b))).length
 }
 
-export function setMineItem(rng: Rng): DrillItem {
-  return {
+/** Easy: the EV is at least 2 bb either way. Hard: within a bb of break-even. */
+export function setMineItem(rng: Rng, difficulty: Difficulty = 'medium'): DrillItem {
+  const make = (): DrillItem => ({
     kind: 'setmine',
     pair: pick(['22', '33', '44', '55', '66', '77', '88', '99'], rng),
     raiseTo: pick([2.5, 3, 3.5, 4, 5], rng),
     stack: pick([15, 20, 30, 40, 60, 80, 100, 150, 200], rng),
     winShare: pick([0.15, 0.25, 0.35, 0.5], rng),
-  }
+  })
+  if (difficulty === 'medium') return make()
+  return generateUntil(make, (item) => {
+    const ev = Math.abs(setMineEv(item as Extract<DrillItem, { kind: 'setmine' }>).ev)
+    // Under 0.2 bb grades either answer as right, which teaches nothing.
+    return difficulty === 'easy' ? ev >= 2 : ev >= 0.2 && ev <= 1
+  })
 }
 
 /** EV in big blinds of calling to set-mine, folding whenever the flop misses. */
@@ -300,22 +386,26 @@ export function handItem(
   }
 }
 
-export function generateDrill(kind: GeneratedKind, rng: Rng): DrillItem {
+export function generateDrill(
+  kind: GeneratedKind,
+  rng: Rng,
+  difficulty: Difficulty = 'medium',
+): DrillItem {
   switch (kind) {
     case 'outs':
-      return outsItem(rng)
+      return outsItem(rng, difficulty)
     case 'preflop':
-      return preflopItem(rng)
+      return preflopItem(rng, difficulty)
     case 'texture':
-      return textureItem(rng)
+      return textureItem(rng, difficulty)
     case 'callfold':
-      return callFoldItem(rng)
+      return callFoldItem(rng, difficulty)
     case 'mdf':
-      return mdfItem(rng)
+      return mdfItem(rng, difficulty)
     case 'combos':
-      return combosItem(rng)
+      return combosItem(rng, difficulty)
     case 'setmine':
-      return setMineItem(rng)
+      return setMineItem(rng, difficulty)
   }
 }
 
